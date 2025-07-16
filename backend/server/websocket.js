@@ -10,16 +10,7 @@ const clients = new Map();
 
 // 模拟消息数据库
 const messages = [];
-function parseTokenFromUrl(url) {
-  try {
-    const parsedUrl = new URL(url, 'http://localhost');
-    const token = parsedUrl.searchParams.get('token');
-    return token ? decodeURIComponent(token) : null;
-  } catch (error) {
-    console.error('解析WebSocket URL失败:', error);
-    return null;
-  }
-}
+
 module.exports = (server) => {
   const wss = new WebSocket.Server({
     noServer: true,
@@ -31,26 +22,36 @@ module.exports = (server) => {
   // 处理升级请求
   server.on('upgrade', (request, socket, head) => {
     // 解析token逻辑
-    const token = parseTokenFromUrl(request.url);
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    const token = url.searchParams.get('token');
+    console.log("token```", token);
     if (!token) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
     }
 
-    try {
-      const decoded = jwt.verify(token, 'your-secret-key');
+    // 验证 token 有效性
+    jwt.verify(token, 'your-secret-key', (err, decoded) => {
+      if (err) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+
+      // 正确升级协议
       wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, decoded.userId); // 传递解码后的用户ID
+        wss.emit('connection', ws, {
+          userId: decoded.userId,
+          token // 新增 token 传递
+        });
       });
-    } catch (error) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-      socket.destroy();
-    }
+    });
   });
   // 处理WebSocket连接
-  wss.on('connection', (ws, userId) => {
+  wss.on('connection', (ws, { userId, token }) => {
     console.log('WebSocket 连接已建立', userId);
+    ws.token = token
     // 将客户端添加到映射表中
     if (!clients.has(userId)) {
       clients.set(userId, new Set());
@@ -88,7 +89,8 @@ module.exports = (server) => {
       content: 'WebSocket 连接已建立',
       timestamp: Date.now()
     }));
-
+    // 发送token过期通知-提前1s发送
+    sendUserTokenExpired(ws);
     // 处理消息
     ws.on('message', (message) => {
       console.log(`收到来自用户 ${userId} 的消息: ${message}`);
@@ -145,13 +147,42 @@ module.exports = (server) => {
       });
     }
   }
-  // 模拟推送消息（仅广播通知类消息）
+  // 发送token过期通知-提前1s发送
+  function sendUserTokenExpired(ws) {
+    try {
+      const decoded = jwt.verify(ws.token, 'your-secret-key');
+
+      // 计算剩余有效时间（提前1秒通知）
+      const expirationTime = decoded.exp * 1000; // 转换为毫秒
+      const remainingTime = expirationTime - Date.now() - 1000;
+
+      if (remainingTime > 0) {
+        // 设置定时器在过期前1秒触发
+        const expirationTimer = setTimeout(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'tokenExpiration',
+              message: '令牌即将过期',
+              expireAt: expirationTime
+            }));
+          }
+        }, remainingTime);
+
+        // 清理定时器
+        ws.on('close', () => clearTimeout(expirationTimer));
+      }
+    } catch (error) {
+      console.error('Token验证失败:', error);
+    }
+  }
+  // 定期向所有用户广播通知的场景
   setInterval(() => {
     clients.forEach((userClients, userId) => {
       const newMessage = {
+        type: 'notification',
         id: Date.now(),
         userId,
-        content: '这是一条推送消息',
+        content: '这是一条广播推送消息',
         timestamp: Date.now()
       };
 

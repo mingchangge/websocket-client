@@ -16,7 +16,6 @@
 <script>
 import { mapState, mapActions } from 'pinia'
 import { useUserStore, useWebSocketStore } from '@/store'
-import { common } from '../../api/common'
 import UserMessage from './UserMessage.vue'
 
 export default {
@@ -37,30 +36,13 @@ export default {
       return
     }
     this.initWebSocket(token)
-    // this.fetchMessages()
   },
   beforeDestroy() {
     this.disconnect()
   },
   methods: {
     ...mapActions(useWebSocketStore, ['initWebSocket', 'disconnect']),
-    logout() {
-      common
-        .logoutApi()
-        .then(() => {
-          this.$message.success('退出登录成功')
-        })
-        .catch(error => {
-          console.error('退出登录失败:', error)
-          this.$message.error('退出登录失败，即将强制退出')
-        })
-        .finally(() => {
-          localStorage.removeItem('token')
-          this.$router.push('/login')
-          this.disconnect()
-        })
-      console.log('退出登录')
-    }
+    ...mapActions(useUserStore, ['logout'])
   }
 }
 </script>
