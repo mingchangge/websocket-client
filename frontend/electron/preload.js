@@ -15,9 +15,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   PrintToPdf: filename => ipcRenderer.invoke('print-to-pdf', filename),
   GetFileData: filename => ipcRenderer.invoke('get-file-data', filename),
   sendChangeBrowserView: (msg, options) => ipcRenderer.send(msg, options),
-  // MinimizeWindow: () => ipcRenderer.send('minimize-window'),
-  // MaximizeWindow: () => ipcRenderer.send('maximize-window'),
-  // CloseWindow: () => ipcRenderer.send('close-window'),
   openBrowser: options => ipcRenderer.send('open-browser', options),
   directLogin: callback => ipcRenderer.on('login-directly', callback)
 })
