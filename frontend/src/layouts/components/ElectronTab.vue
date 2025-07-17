@@ -2,7 +2,7 @@
   <div id="app">
     <div v-if="isElectron">
       <!-- 未登录显示websocket-client和logo -->
-      <div v-if="false" class="root">
+      <div v-if="!isLogin" class="root">
         <div :class="['custom-titlebar', isMac ? 'mac' : 'win']">
           <div>
             <img :src="getAssetsFile('images/512x512.png')" />websocket-client
@@ -11,6 +11,7 @@
       </div>
       <!-- 登录显示Tab -->
       <div
+        v-else
         class="tab-container"
         :style="{
           paddingLeft: isMac ? '100px' : '0',
@@ -84,8 +85,7 @@
 
 <script>
 import { mapState, mapWritableState, mapActions } from 'pinia'
-// import { userStore, useElectronTabStore } from '@/store'
-import { useElectronTabStore } from '@/store'
+import { useUserStore, useElectronTabStore } from '@/store'
 import ScrollPane from '@/components/ScrollPane'
 
 export default {
@@ -102,7 +102,7 @@ export default {
     }
   },
   computed: {
-    // ...mapState(userStore, ['isLogin']),
+    ...mapState(useUserStore, ['isLogin', 'useToken']),
     ...mapState(useElectronTabStore, [
       'applicationData',
       'tabKey',
@@ -145,15 +145,13 @@ export default {
       const url = window.location.href
       if (url.includes('orders-manage/sign-contract'))
         return this.$message.warning('当前页面不支持浏览器打开')
-      const tokenName = localStorage.getItem('tokenName')
-      const tokenValue = localStorage.getItem('tokenValue')
-      if (!tokenName || !tokenValue) {
+
+      if (!this.isLogin) {
         return this.$message.warning('请先登录')
       }
       window.electronAPI.openBrowser({
         url,
-        tokenName: tokenName,
-        tokenValue: tokenValue
+        token: this.useToken
       })
     }
   }

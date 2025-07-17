@@ -1,5 +1,5 @@
 <template>
-  <div class="layout">
+  <div :class="!isBrowser ? 'layout' : 'browser-layout'">
     <el-container>
       <el-header>
         <NavBar />
@@ -55,7 +55,8 @@ export default {
         { name: 'Baidu', url: 'https://www.baidu.com' },
         { name: 'Google', url: 'https://www.google.com' },
         { name: 'GitHub', url: 'https://github.com' }
-      ]
+      ],
+      isBrowser: !window.electronAPI
     }
   },
   methods: {
@@ -96,6 +97,22 @@ export default {
   height: calc(100vh - 37px);
   &-container {
     height: calc(100vh - 37px - 60px - 60px);
+    .el-menu {
+      height: 100%;
+    }
+  }
+  .el-header,
+  .el-footer {
+    text-align: center;
+    line-height: 60px;
+    background-color: #eef1f6;
+    color: #333;
+  }
+}
+.browser-layout {
+  height: 100%;
+  .layout-container {
+    height: calc(100vh - 61px - 60px);
     .el-menu {
       height: 100%;
     }

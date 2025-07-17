@@ -5,8 +5,16 @@ import { router } from '@/router'
 
 export const useUserStore = defineStore('userStore', {
     state: () => ({
-        userInfo: {}
+        userInfo: {},
     }),
+    getters: {
+        isLogin() {
+            return localStorage.getItem('token') !== null
+        },
+        useToken() {
+            return localStorage.getItem('token')
+        }
+    },
     actions: {
         setUserInfo(info) {
             this.userInfo = info;

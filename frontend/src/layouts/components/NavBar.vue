@@ -8,7 +8,19 @@
     </div>
     <div class="navbar-right">
       <UserMessage />
-      <el-button type="text" @click="logout">退出登录</el-button>
+      <el-dropdown trigger="click">
+        <span class="el-dropdown-link">
+          <i class="el-icon-s-tools" />
+        </span>
+        <el-dropdown-menu>
+          <el-dropdown-item @click.native="newLoginWindow"
+            >新建登录</el-dropdown-item
+          >
+          <el-dropdown-item divided @click.native="logout"
+            >退出登录</el-dropdown-item
+          >
+        </el-dropdown-menu>
+      </el-dropdown>
     </div>
   </div>
 </template>
@@ -27,22 +39,23 @@ export default {
     return {}
   },
   computed: {
-    ...mapState(useUserStore, ['userInfo'])
+    ...mapState(useUserStore, ['userInfo', 'isLogin', 'useToken'])
   },
   created() {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      this.$router.push('/login')
-      return
-    }
-    this.initWebSocket(token)
+    this.initWebSocket(this.useToken)
   },
   beforeDestroy() {
     this.disconnect()
   },
   methods: {
     ...mapActions(useWebSocketStore, ['initWebSocket', 'disconnect']),
-    ...mapActions(useUserStore, ['logout'])
+    ...mapActions(useUserStore, ['logout']),
+    newLoginWindow() {
+      if (!window.electronAPI) {
+        return this.$message.warning('请在客户端中打开')
+      }
+      window.electronAPI.NewLoginWindow()
+    }
   }
 }
 </script>
@@ -66,6 +79,13 @@ export default {
   &-right {
     flex: 1;
     text-align: right;
+    .el-dropdown-link {
+      cursor: pointer;
+      color: #409eff;
+    }
+    .el-icon-s-tools {
+      font-size: 18px;
+    }
   }
 }
 </style>

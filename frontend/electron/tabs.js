@@ -192,11 +192,15 @@ export function initTab() {
 // 客户端当前页面用浏览器打开
 ipcMain.on('open-browser', (event, options) => {
   if (!viewArguments || viewArguments.applicationKey === 'Home') {
+    // 生成带 token 的特殊 URL
+    const targetUrl = new URL(options.url);
+    targetUrl.searchParams.set('electron_token', options.token);
+    targetUrl.searchParams.set('expire', Date.now() + 3600 * 1000); // 1小时有效期
     // window窗口的的浏览器打开
     shell.openExternal(
-      `${!options.tokenName
+      `${!options.token
         ? options.url
-        : `${options.url}?tokenName=${options.tokenName}&&tokenValue=${options.tokenValue}`
+        : targetUrl.toString()
       }`
     )
     return
