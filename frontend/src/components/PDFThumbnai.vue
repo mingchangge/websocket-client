@@ -65,18 +65,20 @@ export default {
       const totalPage = pdf.numPages
       const idName = 'canvas-pdf-'
       this.createCanvas(totalPage)
-      for (let i = 1; i <= totalPage; i++) {
-        pdf.getPage(i).then(page => {
-          const viewport = page.getViewport({ scale })
-          const canvas = document.getElementById(idName + i)
-          const context = canvas.getContext('2d')
-          canvas.height = viewport.height
-          canvas.width = viewport.width
-          this.viewHeight = viewport.height
-          const renderContext = { canvasContext: context, viewport }
-          page.render(renderContext)
-        })
-      }
+      this.$nextTick(() => {
+        for (let i = 1; i <= totalPage; i++) {
+          pdf.getPage(i).then(page => {
+            const viewport = page.getViewport({ scale })
+            const canvas = document.getElementById(idName + i)
+            const context = canvas.getContext('2d')
+            canvas.height = viewport.height
+            canvas.width = viewport.width
+            this.viewHeight = viewport.height
+            const renderContext = { canvasContext: context, viewport }
+            page.render(renderContext)
+          })
+        }
+      })
     },
     createCanvas(totalPages) {
       for (let i = 1; i <= totalPages; i++) {
