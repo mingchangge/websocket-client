@@ -6,7 +6,7 @@ export const useMessageStore = defineStore('messageStore', {
         unReadCount: 0, // 未读消息计数
     }),
     getters: {
-        getLatestMessages: (state) => (n = 10) => state.messagesList.slice(0, n)
+        getLatestMessages: (state) => (n = 10) => state.messagesList?.slice(0, n) || [],
     },
     actions: {
         setMessagesList(messages) {
