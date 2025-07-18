@@ -39,7 +39,7 @@ export default {
     return {}
   },
   computed: {
-    ...mapState(useUserStore, ['userInfo', 'isLogin', 'useToken'])
+    ...mapState(useUserStore, ['userInfo', 'useToken'])
   },
   created() {
     this.initWebSocket(this.useToken)

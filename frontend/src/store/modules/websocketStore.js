@@ -38,10 +38,13 @@ export const useWebSocketStore = defineStore('websocketStore', {
                     case 'system':
                         console.log('系统消息:', data.content);
                         break;
-                    case 'tokenExpiration':
-                        console.log('Token即将过期，强制退出登录');
-                        // 触发退出登录逻辑
-                        userStore.logout();
+                    case 'tokenRefresh':
+                        console.log('Token已刷新');
+                        userStore.setToken(data.token);
+                        console.log('重新WebSocket建立连接')
+                        this.initWebSocket(data.token);
+                        console.log('WebSocket连接已建立');
+                        break;
                     default:
                         console.log('未知类型消息:', data);
                 }

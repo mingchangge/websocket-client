@@ -8,7 +8,7 @@
 
 <script>
 import { mapState, mapActions } from 'pinia'
-import { useUserStore, useWebSocketStore } from '@/store'
+import { useUserStore } from '@/store'
 import ElectronTab from '@/layouts/components/ElectronTab'
 
 export default {
@@ -27,13 +27,16 @@ export default {
     if (urlParams.has('electron_token')) {
       // 验证 URL 有效期（防止重放攻击）
       if (Number(urlParams.get('expire')) > Date.now()) {
-        localStorage.setItem('token', urlParams.get('electron_token'))
+        this.setToken(urlParams.get('electron_token'))
         if (this.isLogin) {
           // 立即跳转清除 URL 参数
           history.replaceState(null, '', location.pathname)
         }
       }
     }
+  },
+  methods: {
+    ...mapActions(useUserStore, ['setToken'])
   }
 }
 </script>

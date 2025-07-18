@@ -160,11 +160,24 @@ module.exports = (server) => {
         // 设置定时器在过期前1秒触发
         const expirationTimer = setTimeout(() => {
           if (ws.readyState === WebSocket.OPEN) {
+            // 生成新令牌（续期逻辑）
+            const newToken = jwt.sign(
+              { userId: decoded.userId },
+              'your-secret-key',
+              { expiresIn: '1h' }
+            );
+
+            // 发送新令牌给客户端
             ws.send(JSON.stringify({
-              type: 'tokenExpiration',
-              message: '令牌即将过期',
-              expireAt: expirationTime
+              type: 'tokenRefresh',
+              token: newToken,
+              expireAt: Date.now() + 3600000 // 1小时有效期
             }));
+
+            // 更新当前连接的令牌
+            ws.token = newToken;
+            // 重新设置过期检测
+            sendUserTokenExpired(ws);
           }
         }, remainingTime);
 
@@ -173,6 +186,11 @@ module.exports = (server) => {
       }
     } catch (error) {
       console.error('Token验证失败:', error);
+      // 强制断开无效连接
+      if (ws.readyState === WebSocket.OPEN) {
+        // 1008状态码表示policy violation
+        ws.close(1008, 'Token expired');
+      }
     }
   }
   // 定期向所有用户广播通知的场景

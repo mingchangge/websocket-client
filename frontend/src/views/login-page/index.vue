@@ -28,7 +28,9 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia'
 import { common } from '@/api/common'
+import { useUserStore } from '@/store'
 
 export default {
   name: 'LoginPage',
@@ -47,6 +49,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions(useUserStore, ['setToken']),
     handleLogin() {
       this.$refs.loginForm.validate(async valid => {
         if (valid) {
@@ -56,7 +59,7 @@ export default {
             // 直接访问响应数据（axios 已自动处理 JSON 解析）
             if (response.code === '000000') {
               // 根据后端实际响应结构调整
-              localStorage.setItem('token', response.token)
+              this.setToken(response.token)
               this.$message.success('登录成功')
               this.$router.push('/home')
             } else {

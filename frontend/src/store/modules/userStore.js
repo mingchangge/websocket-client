@@ -16,8 +16,36 @@ export const useUserStore = defineStore('userStore', {
         }
     },
     actions: {
+        setToken(token) {
+            localStorage.setItem('token', token)
+        },
         setUserInfo(info) {
             this.userInfo = info;
+        },
+        // 处理敏感操作前的token验证
+        async handleSensitiveOperation() {
+            try {
+                // 重要操作前主动获取最新token
+                const latestToken = localStorage.getItem('token');
+
+                // 使用新token发起请求
+                const response = await axios.post('/api/change-password', {
+                    newPassword: '******'
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${latestToken}`
+                    }
+                });
+
+                if (response.data.code === '000000') {
+                    this.$message.success('操作成功');
+                }
+            } catch (error) {
+                if (error.response?.status === 401) {
+                    this.$message.error('会话已过期，请重新登录');
+                    this.logout();
+                }
+            }
         },
         logout() {
             common
