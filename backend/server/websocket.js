@@ -59,7 +59,7 @@ module.exports = (server) => {
       }
 
       // 新增黑名单检查（需要从 router.js 引入 tokenBlacklist）
-      if (global.tokenBlacklist?.has(token)) { // 假设已通过全局变量共享
+      if (global.tokenBlacklist?.has(token)) { // 已通过全局变量共享
         handleAuthFailure('AUTH_002', '令牌已失效');
         return;
       }
