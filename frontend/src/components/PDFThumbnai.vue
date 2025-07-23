@@ -70,6 +70,10 @@ export default {
           pdf.getPage(i).then(page => {
             const viewport = page.getViewport({ scale })
             const canvas = document.getElementById(idName + i)
+            if (!canvas) {
+              console.error(`Canvas with id ${idName + i} not found`)
+              return
+            }
             const context = canvas.getContext('2d')
             canvas.height = viewport.height
             canvas.width = viewport.width
