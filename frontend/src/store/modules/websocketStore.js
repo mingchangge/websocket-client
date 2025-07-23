@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import WebSocketService from '@/utils/WebSocketService';
 import { useUserStore } from './userStore';
 import { useMessageStore } from './messageStore';
+import { router } from '@/router'
 
 export const useWebSocketStore = defineStore('websocketStore', {
     state: () => ({
@@ -19,7 +20,8 @@ export const useWebSocketStore = defineStore('websocketStore', {
                 url: this.url,
                 onMessage: (message) => this.handleMessage(message, userStore, messageStore),
                 onClose: () => this.disconnect(),
-                onError: (error) => console.error('WebSocket错误:', error)
+                onError: (error) => console.error('WebSocket错误:', error),
+                onForceLogout: (reason) => this.handleLogout(reason) // 新增强制退出回调
             })
             this.ws.connect()
         },
@@ -47,7 +49,7 @@ export const useWebSocketStore = defineStore('websocketStore', {
                         break;
                     case 'forceLogout':
                         console.warn('强制登出:', data.reason);
-                        userStore.logout();
+                        this.handleLogout(data);
                         break;
                     default:
                         console.log('未知类型消息:', data);
@@ -72,6 +74,23 @@ export const useWebSocketStore = defineStore('websocketStore', {
                 this.ws.send(JSON.stringify(data));
             } else {
                 console.error('无法发送消息: WebSocket未连接');
+            }
+        },
+        // 新增处理方法
+        handleLogout(reason) {
+            try {
+                const data = typeof reason === 'string' ? JSON.parse(reason) : reason;
+                console.warn('强制登出:', data.message || '未知原因');
+
+                // 统一清理逻辑
+                this.disconnect();
+                const userStore = useUserStore();
+                userStore.logout(data); // 触发用户存储清理
+
+                // 路由跳转（需要引入路由实例）
+                router.push({ path: '/login' });
+            } catch (e) {
+                console.error('强制登出处理异常:', e);
             }
         }
     }

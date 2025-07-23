@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { common } from '@/api/common'
 import { Message } from 'element-ui'
-import { router } from '@/router'
+
 
 export const useUserStore = defineStore('userStore', {
     state: () => ({
@@ -48,42 +48,32 @@ export const useUserStore = defineStore('userStore', {
             }
         },
         logout(reason) {
-            const messages = {
-                'token_expired': '登录已过期，请重新登录',
-                'invalid_token': '登录状态异常，请重新登录'
-            };
+            if (!reason.code === 'USER_LOGOUT') {
+                this.clearHistory(); //data.message
+                Message({
+                    message: messages[reason.code] || '登录状态异常，请重新登录',
+                    type: 'error'
+                })
+                return;
+            }
+            // 用户登出逻辑
             common
                 .logoutApi()
                 .then(() => {
-                    if (reason) {
-                        Message({
-                            message: messages[reason] || '登录状态异常，请重新登录',
-                            type: 'success'
-                        });
-                    } else {
-                        Message({
-                            message: '退出登录成功!',
-                            type: 'success'
-                        })
-                    }
-                })
-                .catch(error => {
-                    console.error('退出登录失败:', error)
                     Message({
-                        message: '退出登录失败，即将强制退出!',
-                        type: 'error'
+                        message: '退出登录成功!',
+                        type: 'success'
                     })
                 })
                 .finally(() => {
-                    localStorage.removeItem('token')
-                    router.push('/login')
-                    //清空store里的所有内容
-                    this.$reset()
-                    import('@/store/modules/websocketStore').then(module => {
-                        module.useWebSocketStore().handleForceLogout()
-                    })
+                    this.clearHistory();
                 })
             console.log('退出登录')
+        },
+        clearHistory() {
+            localStorage.removeItem('token')
+            //清空store里的所有内容
+            this.$reset()
         }
     }
 });

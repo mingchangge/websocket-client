@@ -16,7 +16,9 @@
           <el-dropdown-item @click.native="newLoginWindow"
             >新建登录</el-dropdown-item
           >
-          <el-dropdown-item divided @click.native="logout"
+          <el-dropdown-item
+            divided
+            @click.native="handleLogout({ code: 'USER_LOGOUT' })"
             >退出登录</el-dropdown-item
           >
         </el-dropdown-menu>
@@ -48,8 +50,12 @@ export default {
     this.disconnect()
   },
   methods: {
-    ...mapActions(useWebSocketStore, ['initWebSocket', 'disconnect']),
-    ...mapActions(useUserStore, ['logout']),
+    ...mapActions(useWebSocketStore, [
+      'initWebSocket',
+      'disconnect',
+      'handleLogout'
+    ]),
+    // ...mapActions(useUserStore, ['logout']),
     newLoginWindow() {
       if (!window.electronAPI) {
         return this.$message.warning('请在客户端中打开')

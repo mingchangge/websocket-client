@@ -7,6 +7,7 @@ class WebSocketService {
         this.onMessage = options.onMessage;
         this.onClose = options.onClose;
         this.onError = options.onError;
+        this.onForceLogout = options.onForceLogout;
         this.socket = null;
         this.reconnectTimer = null;
         this.reconnectAttempts = 0;
@@ -31,9 +32,30 @@ class WebSocketService {
         this.socket.onmessage = this.onMessage;
 
         this.socket.onclose = (event) => {
-            console.log('WebSocket 连接已关闭，准备重连');
-            this.onClose(event);
-            this.scheduleReconnect();
+            console.log(`WebSocket 关闭，代码: ${event.code}，原因: ${event.reason}`);
+
+            // 新增关闭代码解析
+            if (event.code === 4401) {
+                try {
+                    const reason = JSON.parse(event.reason);
+                    if (reason.type === 'forceLogout') {
+                        console.warn('强制退出:', reason.message);
+                        this.onForceLogout?.(event.reason); // 调用强制退出回调
+                        this.forceLogout = true; // 设置强制退出标志
+                        this.socket = null; // 立即释放连接
+                        return;
+                    }
+                } catch (e) {
+                    console.error('解析关闭原因失败:', e);
+                }
+            }
+
+            // 原有重连逻辑
+            if (!this.forceLogout) {
+                this.handleReconnect();
+                console.log('WebSocket 连接已关闭，准备重连');
+            }
+            this.onClose?.();
         };
 
         this.socket.onerror = (error) => {
@@ -91,13 +113,6 @@ class WebSocketService {
         } else {
             console.error('达到最大重连次数，停止尝试');
         }
-    }
-
-    // 强制退出处理方法
-    handleForceLogout() {
-        this.forceLogout = true;
-        this.disconnect();
-        console.log('用户退出登录，停止所有websocket重连');
     }
 }
 

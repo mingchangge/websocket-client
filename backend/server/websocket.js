@@ -25,17 +25,42 @@ module.exports = (server) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     const token = url.searchParams.get('token');
     console.log("token```", token);
+    // 认证处理（新增黑名单检查）
+    const handleAuthFailure = (errorCode, message) => {
+      const wssTemp = new WebSocket.Server({ noServer: true });
+      wssTemp.handleUpgrade(request, socket, head, (ws) => {
+        // 发送结构化错误信息
+        ws.close(4401, JSON.stringify({
+          type: 'forceLogout',
+          code: errorCode,
+          message
+        }));
+
+        // 清理定时器（新增）
+        const closeTimer = setTimeout(() => ws.terminate(), 1000);
+        ws.on('close', () => clearTimeout(closeTimer));
+      });
+    };
+
     if (!token) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-      socket.destroy();
+      handleAuthFailure('WS_001', '缺少认证令牌');
       return;
     }
 
-    // 验证 token 有效性
     jwt.verify(token, 'your-secret-key', (err, decoded) => {
       if (err) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
+        const errorMap = {
+          TokenExpiredError: ['WS_002', '令牌已过期'],
+          JsonWebTokenError: ['WS_003', '无效令牌']
+        };
+        const [code, msg] = errorMap[err.name] || ['WS_000', '认证失败'];
+        handleAuthFailure(code, msg);
+        return;
+      }
+
+      // 新增黑名单检查（需要从 router.js 引入 tokenBlacklist）
+      if (global.tokenBlacklist?.has(token)) { // 假设已通过全局变量共享
+        handleAuthFailure('AUTH_002', '令牌已失效');
         return;
       }
 
