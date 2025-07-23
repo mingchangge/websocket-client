@@ -46,6 +46,7 @@ export default {
   },
   data() {
     return {
+      pdf: null,
       _uid: 'canvas',
       pageNo: 1,
       totals: [],
@@ -55,19 +56,24 @@ export default {
   mounted() {
     this.renderThumbnails()
   },
+  beforeDestroy() {
+    // 清理PDF.js资源
+    this.pdf = null
+    this.totals = []
+  },
   methods: {
     async renderThumbnails(scale = this.scale) {
       const worker = new pdfjsLib.PDFWorker()
-      let pdf = await pdfjsLib.getDocument({
+      this.pdf = await pdfjsLib.getDocument({
         url: this.fileUrl,
         worker: worker
       }).promise
-      const totalPage = pdf.numPages
+      const totalPage = this.pdf.numPages
       const idName = 'canvas-pdf-'
       this.createCanvas(totalPage)
       this.$nextTick(() => {
         for (let i = 1; i <= totalPage; i++) {
-          pdf.getPage(i).then(page => {
+          this.pdf.getPage(i).then(page => {
             const viewport = page.getViewport({ scale })
             const canvas = document.getElementById(idName + i)
             if (!canvas) {
