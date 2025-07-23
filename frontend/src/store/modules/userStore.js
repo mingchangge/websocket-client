@@ -64,6 +64,11 @@ export const useUserStore = defineStore('userStore', {
                         message: '退出登录成功!',
                         type: 'success'
                     })
+                }).catch(error => {
+                    // 特殊处理401错误
+                    if (error.response?.status === 401) {
+                        Message.error('会话已过期，自动退出')
+                    }
                 })
                 .finally(() => {
                     this.clearHistory();
