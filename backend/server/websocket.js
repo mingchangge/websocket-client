@@ -188,8 +188,14 @@ module.exports = (server) => {
       console.error('Token验证失败:', error);
       // 强制断开无效连接
       if (ws.readyState === WebSocket.OPEN) {
-        // 1008状态码表示policy violation
-        ws.close(1008, 'Token expired');
+        // 发送强制登出指令
+        ws.send(JSON.stringify({
+          type: 'forceLogout',
+          reason: error.name === 'TokenExpiredError' ? 'token_expired' : 'invalid_token',
+          timestamp: Date.now()
+        }));
+        // 延迟1秒关闭确保消息送达-1008状态码表示policy violation
+        setTimeout(() => ws.close(1008, 'Token expired'), 1000);
       }
     }
   }

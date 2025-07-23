@@ -45,6 +45,10 @@ export const useWebSocketStore = defineStore('websocketStore', {
                         this.initWebSocket(data.token);
                         console.log('WebSocket连接已建立');
                         break;
+                    case 'forceLogout':
+                        console.warn('强制登出:', data.reason);
+                        userStore.logout();
+                        break;
                     default:
                         console.log('未知类型消息:', data);
                 }

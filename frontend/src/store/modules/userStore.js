@@ -47,14 +47,25 @@ export const useUserStore = defineStore('userStore', {
                 }
             }
         },
-        logout() {
+        logout(reason) {
+            const messages = {
+                'token_expired': '登录已过期，请重新登录',
+                'invalid_token': '登录状态异常，请重新登录'
+            };
             common
                 .logoutApi()
                 .then(() => {
-                    Message({
-                        message: '退出登录成功!',
-                        type: 'success'
-                    })
+                    if (reason) {
+                        Message({
+                            message: messages[reason] || '登录状态异常，请重新登录',
+                            type: 'success'
+                        });
+                    } else {
+                        Message({
+                            message: '退出登录成功!',
+                            type: 'success'
+                        })
+                    }
                 })
                 .catch(error => {
                     console.error('退出登录失败:', error)
@@ -69,7 +80,7 @@ export const useUserStore = defineStore('userStore', {
                     //清空store里的所有内容
                     this.$reset()
                     import('@/store/modules/websocketStore').then(module => {
-                        module.useWebSocketStore().disconnect()
+                        module.useWebSocketStore().handleForceLogout()
                     })
                 })
             console.log('退出登录')

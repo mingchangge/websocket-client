@@ -2,6 +2,7 @@ class WebSocketService {
     constructor(options) {
         this.url = options.url;
         this.token = options.token; // 新增token参数
+        this.forceLogout = false; // 新增强制退出标志
         // 回调函数
         this.onMessage = options.onMessage;
         this.onClose = options.onClose;
@@ -77,6 +78,10 @@ class WebSocketService {
 
     // 重连方法,如果重连次数超过最大限制，则停止尝试
     scheduleReconnect() {
+        if (this.forceLogout) {
+            console.log('强制退出状态，禁止重连');
+            return;
+        }
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectTimer = setTimeout(() => {
                 this.reconnectAttempts++;
@@ -86,6 +91,13 @@ class WebSocketService {
         } else {
             console.error('达到最大重连次数，停止尝试');
         }
+    }
+
+    // 强制退出处理方法
+    handleForceLogout() {
+        this.forceLogout = true;
+        this.disconnect();
+        console.log('用户退出登录，停止所有websocket重连');
     }
 }
 
