@@ -49,9 +49,9 @@ export default {
   },
   data() {
     return {
-      activeMenu: '/',
+      activeMenu: '/home',
       menuList: [
-        { name: 'Home', path: '/' },
+        { name: 'Home', path: '/home' },
         { name: '元编程', path: '/meta-programming' }
       ],
       sites: [
