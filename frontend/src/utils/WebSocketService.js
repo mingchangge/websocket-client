@@ -19,6 +19,7 @@ class WebSocketService {
         if (this.socket && (this.socket.readyState === WebSocket.CONNECTING || this.socket.readyState === WebSocket.OPEN)) {
             return;
         }
+
         // 对token进行URL编码，防止特殊字符导致协议错误
         const encodedUrl = this._buildSafeWebSocketUrl();
         console.log('Connecting to:', encodedUrl); // 添加调试日志
@@ -71,6 +72,9 @@ class WebSocketService {
     // 新增方法：安全构建WebSocket URL
     _buildSafeWebSocketUrl() {
         const urlObj = new URL(this.url);
+        // 强制使用最新token（从localStorage实时获取）
+        const freshToken = localStorage.getItem('token');
+        this.token = freshToken; // 确保使用最新token
         if (this.token) {
             urlObj.searchParams.set('token', this.token);
         }
@@ -84,7 +88,7 @@ class WebSocketService {
         }
         if (this.socket) {
             this.socket.onclose = null;
-            this.socket.close();
+            this.socket.close(1000, 'manual_disconnect'); // 使用1000表示正常关闭
             this.socket = null;
         }
     }

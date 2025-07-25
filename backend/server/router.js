@@ -24,7 +24,7 @@ router.post('/api/login', async (ctx) => {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
-    const token = jwt.sign({ userId: user.id }, 'your-secret-key', { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user.id, nonce: Date.now() }, 'your-secret-key', { expiresIn: '24h' });
     ctx.body = { code: '000000', message: '登录成功', token };
   } else {
     ctx.status = 401;

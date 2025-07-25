@@ -187,7 +187,7 @@ module.exports = (server) => {
           if (ws.readyState === WebSocket.OPEN) {
             // 生成新令牌（续期逻辑）
             const newToken = jwt.sign(
-              { userId: decoded.userId },
+              { userId: decoded.userId, nonce: Date.now() },
               'your-secret-key',
               { expiresIn: '1h' }
             );
@@ -198,7 +198,8 @@ module.exports = (server) => {
               token: newToken,
               expireAt: Date.now() + 3600000 // 1小时有效期
             }));
-
+            // 将旧token加入黑名单
+            global.tokenBlacklist.add(ws.token);
             // 更新当前连接的令牌
             ws.token = newToken;
             // 重新设置过期检测
@@ -208,6 +209,8 @@ module.exports = (server) => {
 
         // 清理定时器
         ws.on('close', () => clearTimeout(expirationTimer));
+      } else {
+        throw new jwt.TokenExpiredError('Token expired', new Date(expirationTime));
       }
     } catch (error) {
       console.error('Token验证失败:', error);
