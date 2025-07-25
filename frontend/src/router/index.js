@@ -27,6 +27,11 @@ const routes = [
       component: () => import('@/views/home-page'),
       meta: { title: '首页', hidden: false },
       children: []
+    }, {
+      path: 'meta-programming',
+      component: () => import('@/views/meta-programming'),
+      meta: { title: '前端元编程', hidden: false },
+      children: []
     },]
   },
   {

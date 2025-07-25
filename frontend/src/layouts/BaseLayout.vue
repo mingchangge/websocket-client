@@ -50,7 +50,10 @@ export default {
   data() {
     return {
       activeMenu: '/',
-      menuList: [{ name: 'Home', path: '/' }],
+      menuList: [
+        { name: 'Home', path: '/' },
+        { name: '元编程', path: '/meta-programming' }
+      ],
       sites: [
         { name: 'Baidu', url: 'https://www.baidu.com' },
         { name: 'Google', url: 'https://www.google.com' },
@@ -58,6 +61,9 @@ export default {
       ],
       isBrowser: !window.electronAPI
     }
+  },
+  created() {
+    this.activeMenu = this.$route.path
   },
   methods: {
     ...mapActions(useElectronTabStore, ['openApplication']),
