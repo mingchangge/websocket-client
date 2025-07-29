@@ -12,6 +12,8 @@ export default {
     return {}
   },
   mounted() {
+    /*
+    // proxy示例
     this.exampleMethod() // 调用示例方法
     this.proxyExample() // 调用代理示例
     // this.proxyRevocableExample() // 调用可撤销代理示例
@@ -34,6 +36,25 @@ export default {
     this.proxyTrapIsExtensible() // 调用代理劫持 isExtensible 方法示例
     this.proxyTrapPreventExtensions() // 调用代理劫持 preventExtensions 方法示例
     this.proxyTrapSetPrototypeOf() // 调用代理劫持 setPrototypeOf 方法示例
+     */
+    // reflect 示例
+    this.reflectExample() // 调用 Reflect 示例
+    // 调用 Reflect construct 示例
+    this.reflectConstructExample()
+    this.reflectConstructExample2()
+    this.reflectDefinePropertyExample() // 调用 Reflect defineProperty 示例
+    this.reflectDeletePropertyExample() // 调用 Reflect deleteProperty 示例
+    // 调用 Reflect get 示例
+    this.reflectGetExample()
+    this.reflectGetExample2()
+    this.reflectGetOwnPropertyDescriptorExample() // 调用 Reflect getOwnPropertyDescriptor 示例
+    this.reflectGetPrototypeOfExample() // 调用 Reflect getPrototypeOf 示例
+    this.reflectHasExample() // 调用 Reflect has 示例
+    this.reflectIsExtensibleExample() // 调用 Reflect isExtensible 示例
+    this.reflectOwnKeysExample() // 调用 Reflect ownKeys 示例
+    this.reflectPreventExtensionsExample() // 调用 Reflect preventExtensions 示例
+    this.reflectSetExample() // 调用 Reflect set 示例
+    this.reflectSetPrototypeOfExample() // 调用 Reflect setPrototypeOf 示例
   },
   methods: {
     // 可以在这里添加元编程相关的方法
@@ -147,7 +168,7 @@ export default {
       })
       const person = new personProxy('John', 30)
       console.log(person) // 输出: Person { name: 'John', age: 30 }
-      /* 
+      /*
       var p = new Proxy(function () {}, {
         construct: function (target, argumentsList, newTarget) {
           return 1
@@ -157,7 +178,7 @@ export default {
       new p()
       // 输出报错: TypeError:'construct' on proxy: trap returned non-object ('1')
        */
-      /* 
+      /*
       // 代理初始化时，传给它的target必须具有一个有效的构造函数供new操作符调用
       var p = new Proxy(
         {},
@@ -222,7 +243,7 @@ export default {
       console.log(proxyObj.a) // 输出: 10
       console.log(proxyObj.b) // 输出: 属性不存在
 
-      /* 
+      /*
       const target = {}
       // 定义一个只有 setter 的属性
       Object.defineProperty(target, 'secret', {
@@ -277,7 +298,7 @@ export default {
       console.log(proxy1.eyeCount) //输出：4
       proxy1.eyeCount = 2
       console.log(proxy1.eyeCount) //输出：2
-      /* 
+      /*
       const target = {}
       Object.defineProperty(target, 'id', {
         value: 42,
@@ -296,7 +317,7 @@ export default {
       proxy.id = 99
       // 输出报错: TypeError: 'set' on proxy: trap returned falsish for property 'id'
        */
-      /* 
+      /*
         const target = {
             _name: 'Tom'
         }
@@ -394,7 +415,7 @@ export default {
       )
       console.log(Object.getOwnPropertyDescriptor(proxyObj, 'name'))
       // 输出: { value: 'kk', writable: true, enumerable: true, configurable: true }
-      /* 
+      /*
         const target = {}
         Object.defineProperty(target, 'x', { value: 1, configurable: false })
         const proxy = new Proxy(target, {
@@ -403,9 +424,9 @@ export default {
         }
         })
         Object.getOwnPropertyDescriptor(proxy, 'x')
-        // 输出报错：TypeError: 'getOwnPropertyDescriptor' on proxy: trap returned undefined for property 'x' which is non-configurable in the proxy target 
+        // 输出报错：TypeError: 'getOwnPropertyDescriptor' on proxy: trap returned undefined for property 'x' which is non-configurable in the proxy target
      */
-      /*  
+      /*
         const target = { y: 2 }
         Object.preventExtensions(target)
 
@@ -418,7 +439,7 @@ export default {
         Object.getOwnPro pertyDescriptor(proxy, 'y')
         // 输出报错：TypeError: 'getOwnPropertyDescriptor' on proxy: trap returned undefined for property 'y' which exists in the non-extensible proxy target
       */
-      /* 
+      /*
       const target = {}
       Object.preventExtensions(target)
 
@@ -431,7 +452,7 @@ export default {
       Object.getOwnPropertyDescriptor(proxy, 'z')
       // 输出报错：TypeError: 'getOwnPropertyDescriptor' on proxy: trap returned descriptor for property 'z' that is incompatible with the existing property in the proxy target
      */
-      /* 
+      /*
       const target = { w: 3 } // w 默认 configurable: true
       const proxy = new Proxy(target, {
         getOwnPropertyDescriptor(t, prop) {
@@ -442,7 +463,7 @@ export default {
       Object.getOwnPropertyDescriptor(proxy, 'w')
       // 输出报错：peError: 'getOwnPropertyDescriptor' on proxy: trap reported non-configurability for property 'w' which is either non-existent or configurable in the proxy target
      */
-      /* 
+      /*
       const target = {}
       const proxy = new Proxy(target, {
         getOwnPropertyDescriptor(t, prop) {
@@ -513,7 +534,7 @@ export default {
       console.log('age' in proxyObj) // 输出: true
       console.log('height' in proxyObj) // 输出: true
       console.log('weight' in proxyObj) // 输出: false
-      /* 
+      /*
       with (proxyObj) {
         console.log('name' in proxyObj) // 输出: true
         console.log('age' in proxyObj) // 输出: true
@@ -550,7 +571,7 @@ export default {
       console.log(Object.isExtensible(proxyObj)) // 输出: true
       Object.preventExtensions(proxyObj) // 阻止扩展
       console.log(Object.isExtensible(proxyObj)) // 输出: false
-      /* 
+      /*
       var p = new Proxy(
         {},
         {
@@ -581,7 +602,7 @@ export default {
       console.log(target.isExtensible) // 输出: false
       console.log(Object.isExtensible(proxyObj)) // 输出: false
       console.log(Object.isExtensible(target)) // 输出: false
-      /* 
+      /*
       var p = new Proxy(
         {},
         {
@@ -608,6 +629,231 @@ export default {
       )
       Object.setPrototypeOf(proxyObj, Array.prototype) // 设置原型为 Array.prototype
       console.log(Object.getPrototypeOf(proxyObj) === Array.prototype) // 输出: true
+    },
+    // Reflect apply示例
+    reflectExample() {
+      console.log(Reflect.apply(Math.floor, undefined, [1.75])) // 输出: 1
+    },
+    // Reflect construct示例
+    reflectConstructExample() {
+      const Person = function (name, age) {
+        this.name = name
+        this.age = age
+      }
+      const person = Reflect.construct(Person, ['John', 30])
+      console.log(person) // 输出: Person { name: 'John', age: 30 }
+    },
+    reflectConstructExample2() {
+      const OneClass = function () {
+        this.name = 'oneClass'
+      }
+      const TwoClass = function () {
+        this.name = 'twoClass'
+      }
+      const obj = Reflect.construct(OneClass, [])
+      console.log(obj) // 输出: OneClass {name: 'oneClass'}
+      console.log(obj instanceof OneClass) // 输出: true
+      console.log(obj instanceof TwoClass) // 输出: false
+      // 原型指向 TwoClass.prototype
+      const obj1 = Reflect.construct(OneClass, [], TwoClass)
+      console.log(obj1) // 输出: TwoClass {name: 'oneClass'}
+      console.log(obj1 instanceof OneClass) // 输出: false
+      console.log(obj1 instanceof TwoClass) // 输出: true
+      //Reflect.construct之前的原型指向 TwoClass.prototype实现方法
+      const obj2 = Object.create(TwoClass.prototype) // object.create 创建一个新对象，原型指向 TwoClass.prototype
+      OneClass.call(obj2) // “借用” OneClass 的构造函数逻辑来初始化 obj2，对 OneClass 本身及其原型链无影响。
+      console.log(obj2) // 输出: TwoClass {name: 'oneClass'}
+      console.log(obj2 instanceof OneClass) // 输出: false
+      console.log(obj2 instanceof TwoClass) // 输出: true
+    },
+    // Reflect defineProperty示例
+    reflectDefinePropertyExample() {
+      let obj = {}
+      Reflect.defineProperty(obj, 'name', {
+        value: 'kk'
+      })
+      console.log(obj.name) // 输出: kk
+      console.log(Object.getOwnPropertyDescriptor(obj, 'name'))
+      //输出：{value: 'kk', writable: false, enumerable: false, configurable: false}
+    },
+    // Reflect deleteProperty示例
+    reflectDeletePropertyExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+
+      console.log(Reflect.deleteProperty(obj, 'name')) // 输出: true
+      console.log(obj) // 输出: { age: 18 }
+      // 尝试删除被冻结的属性会失败
+      Object.freeze(obj)
+      console.log(Reflect.deleteProperty(obj, 'age')) // 输出: false
+      // 尝试删除不存在的属性会返回 true
+      console.log(Reflect.deleteProperty(obj, 'number')) // 输出: true
+      var arr = [1, 2, 3, 4, 5]
+      Reflect.deleteProperty(arr, '3') // true
+      console.log(arr, arr.length) // 输出: [1, 2, 3, empty, 5] 5
+    },
+    // Reflect get示例
+    reflectGetExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+      console.log(Reflect.get(obj, 'name')) // 输出: kk
+      console.log(Reflect.get(obj, 'number')) // 输出: undefined
+      let arr = [1, 2]
+      console.log(Reflect.get(arr, 0)) // 输出: 1
+      console.log(Reflect.get(arr, 2)) // 输出: undefined
+    },
+    reflectGetExample2() {
+      let obj = {
+        name: 'kk',
+        get greeting() {
+          return `Hello, ${this.name}!`
+        }
+      }
+      console.log(Reflect.get(obj, 'greeting')) // 输出: Hello, kk!
+      const receiver = { name: 'll' }
+      console.log(Reflect.get(obj, 'greeting', receiver)) // 输出: Hello, ll!
+    },
+    //Reflect getOwnPropertyDescriptor示例
+    reflectGetOwnPropertyDescriptorExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+      console.log(Reflect.getOwnPropertyDescriptor(obj, 'name'))
+      // 输出: {value: 'kk', writable: true, enumerable: true, configurable: true}
+      console.log(Reflect.getOwnPropertyDescriptor(obj, 'number')) // 输出: undefined
+      console.log(Reflect.getOwnPropertyDescriptor([], 'length'))
+      // 输出: {value: 0, writable: true, enumerable: false, configurable: false}
+      // 尝试获取非对象的属性描述符
+      console.log(Object.getOwnPropertyDescriptor('a', '0'))
+      //输出: {value: 'a', writable: false, enumerable: true, configurable: false}
+      // console.log(Reflect.getOwnPropertyDescriptor('a', '0'))
+      // 输出报错: TypeError: Reflect.getOwnPropertyDescriptor called on non-object
+    },
+    //Reflect getPrototypeOf示例
+    reflectGetPrototypeOfExample() {
+      const object1 = {
+        property1: 42
+      }
+      const proto1 = Reflect.getPrototypeOf(object1)
+      console.log(proto1)
+      // 输出: {constructor: ƒ, __defineGetter__: ƒ, __defineSetter__: ƒ, hasOwnProperty: ƒ, __lookupGetter__: ƒ, …}
+      console.log(Reflect.getPrototypeOf({}))
+      // 输出: {constructor: ƒ, __defineGetter__: ƒ, __defineSetter__: ƒ, hasOwnProperty: ƒ, __lookupGetter__: ƒ, …}
+      console.log(Reflect.getPrototypeOf(Reflect.getPrototypeOf({}))) // 输出: null
+      console.log(Reflect.getPrototypeOf(proto1)) // 输出: null
+      // 在 ES2015 规范下，Reflect 抛异常，Object 强制转换非 Object 类型
+      console.log(Object.getPrototypeOf('foo')) // 输出:  String {'', constructor: ƒ, anchor: ƒ, at: ƒ, big: ƒ, …}
+      // console.log(Reflect.getPrototypeOf('foo')) // 输出报错: TypeError: Reflect.getPrototypeOf called on non-object
+    },
+    // Reflect has示例
+    reflectHasExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+      console.log(Reflect.has(obj, 'name')) // 输出: true
+      console.log(Reflect.has(obj, 'number')) // 输出: false
+      console.log(Reflect.has([], 'length')) // 输出: true
+      // Reflect.has 可以用于检查数组的索引
+      console.log(Reflect.has([1, 2, 3], '0')) // 输出: true
+      console.log(Reflect.has([], '0')) // 输出: false
+      console.log(Reflect.has([0], '1')) // 输出: false
+      // Reflect.has 也可以用于检查 Symbol 属性
+      let sym = Symbol('test')
+      obj[sym] = 'symbol value'
+      console.log(Reflect.has(obj, sym)) // 输出: true
+    },
+    // Reflect isExtensible示例
+    reflectIsExtensibleExample() {
+      let obj = {}
+      console.log(Reflect.isExtensible(obj)) // 输出: true
+      Object.preventExtensions(obj) // 阻止扩展
+      console.log(Reflect.isExtensible(obj)) // 输出: false
+      let sealedObj = Object.seal({ name: 'kk' })
+      console.log(Reflect.isExtensible(sealedObj)) // 输出: false
+      let frozenObj = Object.freeze({ age: 18 })
+      console.log(Reflect.isExtensible(frozenObj)) // 输出: false
+      // Reflect.isExtensible 也可以用于检查数组
+      let arr = [1, 2, 3]
+      console.log(Reflect.isExtensible(arr)) // 输出: true
+      Object.preventExtensions(arr) // 阻止扩展
+      console.log(Reflect.isExtensible(arr)) // 输出: false
+      // 尝试在不可扩展的字符串上使用 Reflect.isExtensible
+      // console.log(Reflect.isExtensible('hello'))
+      // 输出报错: TypeError: Reflect.isExtensible called on non-object
+    },
+    // Reflect ownKeys示例
+    reflectOwnKeysExample() {
+      let obj = {
+        [Symbol.for('comet')]: 'comet',
+        name: 'kk',
+        age: 18,
+        773: 773,
+        0: 0,
+        '-1': '-1',
+        [Symbol.for('meteor')]: 'meteor'
+      }
+      console.log(Reflect.ownKeys(obj))
+      // 输出:  ['0', '773', 'name', 'age', '-1', Symbol(comet), Symbol(meteor)]
+      let arr = [1, 2, 3]
+      console.log(Reflect.ownKeys(arr))
+      // 输出: ['0', '1', '2', 'length']
+    },
+    // Reflect preventExtensions示例
+    reflectPreventExtensionsExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+      console.log(Reflect.preventExtensions(obj)) // 输出: true
+      console.log(Reflect.isExtensible(obj)) // 输出: false
+
+      console.log(Object.preventExtensions(1))
+      // 输出: 1
+      // console.log(Reflect.preventExtensions(1))
+      // 输出报错: TypeError: Reflect.preventExtensions called on non-object
+    },
+    // Reflect set示例
+    reflectSetExample() {
+      let obj = {
+        name: 'kk',
+        age: 18
+      }
+      console.log(Reflect.set(obj, 'name', 'll')) // 输出: true
+      console.log(obj.name) // 输出: ll
+      console.log(Reflect.set(obj, 'age', 20)) // 输出: true
+      console.log(obj.age) // 输出: 20
+      // console.log(Reflect.set('hello', 0, 'a'))
+      // 输出报错: TypeError: Reflect.set called on non-object
+    },
+    // Reflect setPrototypeOf示例
+    reflectSetPrototypeOfExample() {
+      let obj = {}
+      console.log(Reflect.setPrototypeOf(obj, null)) // 输出: true
+      // let obj2 = Object.freeze({})
+      // console.log(Reflect.setPrototypeOf(obj2, null)) // 输出: false
+      // let obj2_1 = Object.freeze(obj)
+      // console.log(Reflect.setPrototypeOf(obj2_1, null))
+      // // 输出: true，因为 Object.freeze() 冻结的对象的原型已经是 null，再次设置null返回true
+      // console.log(Reflect.setPrototypeOf(obj2_1, {})) // 输出: false
+      let obj3 = Object.seal({})
+      console.log(Reflect.setPrototypeOf(obj3, null)) // 输出: false
+      let obj3_1 = Object.seal(obj)
+      console.log(Reflect.setPrototypeOf(obj3_1, null)) // 输出: true
+      console.log(Reflect.setPrototypeOf(obj3_1, {})) // 输出: false
+      let obj4 = Object.preventExtensions({})
+      console.log(Reflect.setPrototypeOf(obj4, null)) // 输出: false
+      let obj4_1 = Object.preventExtensions(obj)
+      console.log(Reflect.setPrototypeOf(obj4_1, null)) // 输出: true
+      console.log(Reflect.setPrototypeOf(obj4_1, {})) // 输出: false
+      const target = {}
+      const proto = Object.create(target)
+      console.log(Reflect.setPrototypeOf(target, proto)) // 输出: false
     }
   }
 }
