@@ -1,19 +1,15 @@
 const Router = require('@koa/router');
 const router = new Router();
-const jwt = require('jsonwebtoken');
+const tokenService = require('./utils/token');
+const tokenBlacklist = tokenService.tokenBlacklist;
 
-// 模拟黑名单存储，在实际应用中，建议使用数据库或缓存系统（如Redis）来存储
-const tokenBlacklist = new Set();
-// 模拟用户数据库
-const users = [
-  { id: 1, username: 'admin', password: 'password', email: 'admin@example.com' }
-];
+//数据导入
+const { users } = require('./storage/db');
 
-// 模拟消息数据库
-const messages = [
-  { id: 1, userId: 1, content: '欢迎使用系统', timestamp: Date.now() - 3600000 },
-  { id: 2, userId: 1, content: '您有新的通知', timestamp: Date.now() - 1800000 }
-];
+const isDev = process.env.NODE_ENV !== 'production';
+console.log('isDev', isDev);
+
+
 // 新增测试路由
 router.get('/api/health-check', (ctx) => {
   ctx.body = { status: 'ok', port: 3000 }
@@ -24,13 +20,81 @@ router.post('/api/login', async (ctx) => {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
-    const token = jwt.sign({ userId: user.id, nonce: Date.now() }, 'your-secret-key', { expiresIn: '24h' });
-    ctx.body = { code: '000000', message: '登录成功', token };
+    // 生成双Token
+    const { accessToken, refreshToken } = tokenService.generateTokens(user.id);
+    // 设置HttpOnly Cookie
+    ctx.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: !isDev, // 生产环境启用
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 3600 * 1000 // 7天
+    });
+
+    ctx.body = {
+      code: '000000',
+      data: { access_token: accessToken },
+      message: '登录成功'
+    };
   } else {
     ctx.status = 401;
     ctx.body = { message: '认证失败' };
   }
 });
+// 刷新Token接口
+router.post('/api/refresh_token', (ctx) => {
+  const refreshToken = ctx.cookies.get('refresh_token');
+
+  // 验证RefreshToken
+  try {
+    // 使用tokenService验证令牌
+    const decoded = tokenService.verifyToken(refreshToken);
+
+    // 黑名单检查
+    if (tokenBlacklist.has(refreshToken)) {
+      ctx.status = 401;
+      ctx.body = { code: 'AUTH_007', message: '刷新令牌已失效' };
+      return;
+    }
+
+    // 生成新Token对（包含新refreshToken）
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      tokenService.generateTokens(decoded.userId);
+
+    // 使旧RefreshToken失效
+    tokenBlacklist.add(refreshToken);
+
+    // 设置新Cookie
+    ctx.cookies.set('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: !isDev,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 3600 * 1000
+    });
+
+    ctx.body = {
+      code: '000000',
+      data: { access_token: newAccessToken }
+    };
+  } catch (error) {
+    // 统一错误处理
+    const errorMap = {
+      [tokenService.TokenExpiredError.name]: {
+        code: 'AUTH_004',
+        message: '刷新令牌已过期'
+      },
+      [tokenService.JsonWebTokenError.name]: {
+        code: 'AUTH_005',
+        message: '无效的刷新令牌'
+      }
+    };
+
+    ctx.status = 401;
+    ctx.body = errorMap[error.name] || {
+      code: 'AUTH_000',
+      message: '令牌刷新失败'
+    };
+  }
+})
 // 退出登录接口
 router.post('/api/logout', async (ctx) => {
   console.log('退出登录接口被调用', ctx);
@@ -38,7 +102,7 @@ router.post('/api/logout', async (ctx) => {
 
   try {
     // 验证token有效性
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = tokenService.verifyToken(token);
 
     // 将token添加到黑名单
     tokenBlacklist.add(token);
@@ -87,7 +151,12 @@ const authMiddleware = (options = { requireFresh: false }) => {
 
     try {
       // 令牌验证
-      const decoded = jwt.verify(token, 'your-secret-key');
+      const isRefreshToken = ctx.path === '/api/refresh_token';
+      const secret = isRefreshToken ? 'refresh-token-secret' : 'access-token-secret';
+      const decoded = tokenService.verifyToken(token, {
+        secret,
+        ignoreExpiration: false
+      });
 
       // 新鲜度验证（当需要时）
       if (options.requireFresh) {

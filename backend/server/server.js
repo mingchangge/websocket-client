@@ -5,11 +5,9 @@ const cors = require('@koa/cors');
 const app = new Koa();
 const PORT = 3000;
 
-// 在 app.js 顶部添加
-global.tokenBlacklist = require('./router').tokenBlacklist;
 // 导入路由和WebSocket处理
 const router = require('./router');
-const setupWebSocket = require('./websocket');
+const setupWebSocket = require('./websocket/websocket');
 
 // 中间件
 app.use(cors());

@@ -9,6 +9,13 @@ import { store } from './store'
 import "./style.css";
 import App from "./App.vue";
 
+const eventBus = {
+    emit: (event, payload) => window.dispatchEvent(new CustomEvent(event, { detail: payload })),
+    on: (event, callback) => window.addEventListener(event, e => callback(e.detail)),
+    off: (event, callback) => window.removeEventListener(event, e => callback(e.detail))
+}
+
+Vue.prototype.$bus = eventBus
 
 Vue.use(ElementUI)
 Vue.use(VCalendar)

@@ -110,17 +110,17 @@ export default {
     ]),
     ...mapWritableState(useElectronTabStore, ['tabData'])
   },
-  // watch: {
-  //   isLogin: {
-  //     handler(bool) {
-  //       if (bool) {
-  //         this.tabData = this.applicationData.filter(app => app.isVisible)
-  //         this.openApplication(this.tabData[0])
-  //       }
-  //     },
-  //     immediate: true
-  //   }
-  // },
+  watch: {
+    isLogin: {
+      handler(bool) {
+        if (bool) {
+          this.tabData = this.applicationData.filter(app => app.isVisible)
+          this.openApplication(this.tabData[0])
+        }
+      },
+      immediate: true
+    }
+  },
   created() {
     // 判断是否是mac系统
     this.isMac = /macintosh|mac os x/i.test(navigator.userAgent)
@@ -128,8 +128,6 @@ export default {
     this.isElectron = window.electronAPI
     if (!this.isElectron) return
     this.isDev = import.meta.env.MODE === 'dev'
-    this.tabData = this.applicationData.filter(app => app.isVisible)
-    this.openApplication(this.tabData[0])
   },
   methods: {
     ...mapActions(useElectronTabStore, [
@@ -145,7 +143,6 @@ export default {
       const url = window.location.href
       if (url.includes('orders-manage/sign-contract'))
         return this.$message.warning('当前页面不支持浏览器打开')
-
       if (!this.isLogin) {
         return this.$message.warning('请先登录')
       }

@@ -14,4 +14,10 @@ export const common = {
             method: 'post'
         })
     },
+    refreshTokenApi: () => {
+        return request({
+            url: '/refresh_token',
+            method: 'post'
+        })
+    },
 }

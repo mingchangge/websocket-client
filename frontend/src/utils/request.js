@@ -1,6 +1,9 @@
 import axios from 'axios'
 import Vue from 'vue'
 import { Message } from 'element-ui'
+import { useUserStore } from '@/store'
+import { router } from '@/router'
+import { common } from '@/api/common'
 
 const services = axios.create({
   baseURL:
@@ -23,9 +26,9 @@ services.interceptors.request.use(
     /**
      * 在这里一般会携带前台的参数发送给后台
      */
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers['token'] = token
+    const userStore = useUserStore()
+    if (userStore.accessToken) {
+      config.headers['Authorization'] = `Bearer ${userStore.accessToken}`
     }
     return config
   },
@@ -94,15 +97,26 @@ services.interceptors.response.use(
 
     return res
   },
-  error => {
+  async error => {
     const { response } = error
-    if (response && response.data) {
-      return Promise.reject(error)
-    } else {
-      const { message } = error
-      console.error('[api]', message)
-      return Promise.reject(error)
+    const originalRequest = error.config
+    if (response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      try {
+        // 自动刷新token
+        // const response = await common.refreshTokenApi()
+        // const newAccessToken = response.data.access_token
+        const userStore = useUserStore()
+        // userStore.setToken(newAccessToken)
+        userStore.refreshToken()
+        originalRequest.headers.Authorization = `Bearer ${userStore.accessToken}`
+        return services(originalRequest)
+      } catch (refreshError) {
+        userStore.clearHistory()
+        router.push('/login')
+      }
     }
+    return Promise.reject(error)
   }
 )
 

@@ -8,7 +8,7 @@
 
 <script>
 import { mapState, mapActions } from 'pinia'
-import { useUserStore } from '@/store'
+import { useUserStore, useWebSocketStore } from '@/store'
 import ElectronTab from '@/layouts/components/ElectronTab'
 
 export default {
@@ -34,6 +34,10 @@ export default {
         }
       }
     }
+  },
+  mounted() {
+    const wsStore = useWebSocketStore()
+    wsStore.setupEventListeners()
   },
   methods: {
     ...mapActions(useUserStore, ['setToken'])

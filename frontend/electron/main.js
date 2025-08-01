@@ -164,7 +164,7 @@ function startUpdater() {
 }
 
 // let landingPage = isDev ? '#home' : '#login'
-let landingPage = '#home'
+let landingPage = '#login'
 let mainURLRoot = app.isPackaged
   ? `file://${path.join(__dirname, '../client/index.html')}`
   : `${process.env.VITE_DEV_SERVER_URL}`

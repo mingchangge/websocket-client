@@ -59,7 +59,8 @@ export default {
             // 直接访问响应数据（axios 已自动处理 JSON 解析）
             if (response.code === '000000') {
               // 根据后端实际响应结构调整
-              this.setToken(response.token)
+              const userStore = useUserStore()
+              userStore.setToken(response.data.access_token) // 仅存内存
               this.$message.success('登录成功')
               this.$router.push('/home')
             } else {

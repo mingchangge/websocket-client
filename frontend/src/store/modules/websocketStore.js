@@ -3,6 +3,7 @@ import WebSocketService from '@/utils/WebSocketService';
 import { useUserStore } from './userStore';
 import { useMessageStore } from './messageStore';
 import { router } from '@/router'
+import { eventBus } from '@/utils/eventBus'
 
 export const useWebSocketStore = defineStore('websocketStore', {
     state: () => ({
@@ -10,6 +11,22 @@ export const useWebSocketStore = defineStore('websocketStore', {
         ws: null, // WebSocket实例
     }),
     actions: {
+        // 新增初始化方法
+        setupEventListeners() {
+            // 安全检查
+            if (typeof window === 'undefined') return;
+
+            // 令牌刷新监听
+            eventBus.on('token-refreshed', ({ token }) => {
+                console.log('收到令牌刷新事件，重新连接WebSocket');
+                this.initWebSocket(token);
+            });
+
+            // 登出事件监听
+            eventBus.on('user-logout', () => {
+                this.disconnect();
+            });
+        },
         initWebSocket(token) {
             // 如有WebSocket连接，先断开，在重新连接
             this.disconnect();
@@ -19,7 +36,13 @@ export const useWebSocketStore = defineStore('websocketStore', {
                 token: token,
                 url: this.url,
                 onMessage: (message) => this.handleMessage(message, userStore, messageStore),
-                onClose: () => this.disconnect(),
+                onClose: (event) => {
+                    console.log('连接关闭详情:', event);
+                    if (event.code === 1006) {
+                        console.warn('异常断开，尝试刷新令牌');
+                        userStore.refreshToken();
+                    }
+                },
                 onError: (error) => console.error('WebSocket错误:', error),
                 onForceLogout: (reason) => this.handleLogout(reason) // 新增强制退出回调
             })
@@ -42,7 +65,7 @@ export const useWebSocketStore = defineStore('websocketStore', {
                         break;
                     case 'tokenRefresh':
                         console.log('Token已刷新');
-                        userStore.setToken(data.token);
+                        userStore.setToken(data.token) // 仅更新内存
                         console.log('重新WebSocket建立连接')
                         this.initWebSocket(data.token);
                         console.log('WebSocket连接已建立');
@@ -55,7 +78,18 @@ export const useWebSocketStore = defineStore('websocketStore', {
                         console.log('未知类型消息:', data);
                 }
             } catch (error) {
-                console.error('解析WebSocket消息失败:', error);
+                console.error('消息处理失败:', {
+                    error: error.message,
+                    rawData: message.data // 记录原始数据
+                });
+
+                // 触发错误回调
+                if (this.ws?.onError) {
+                    this.ws.onError({
+                        type: 'MessageProcessingError',
+                        error
+                    });
+                }
             }
         },
 
