@@ -1,6 +1,16 @@
 <template>
   <div>
-    <div ref="previewContainer"></div>
+    <h1>docx-preview</h1>
+    <p>像素级还原，真·预览利器</p>
+    <p>
+      如果你正在开发一个在线文档预览器，或者希望用户可以在 Web 页面中“像在 Word
+      里一样看文档”，那 docx-preview 就是你要找的神兵利器。
+    </p>
+    <p>安装方式：</p>
+    <code>npm install docx-preview</code>
+    <div class="docx-preview-container">
+      <div ref="previewContainer"></div>
+    </div>
   </div>
 </template>
 
@@ -9,22 +19,13 @@ import { renderAsync } from 'docx-preview'
 
 export default {
   name: 'DocxPreview',
-  props: {
-    fileUrl: {
-      type: String,
-      required: true
-    }
-  },
   data() {
     return {
-      previewContainer: null
+      fileUrl: new URL(`@/assets/word/preview.docx`, import.meta.url).href
     }
   },
-  async mounted() {
-    const docxFile = await fetch(this.fileUrl)
-    const arrayBuffer = await docxFile.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-    renderAsync(uint8Array, this.$refs.previewContainer)
+  mounted() {
+    this.renderDocx()
   },
   methods: {
     async renderDocx() {
@@ -51,4 +52,25 @@ export default {
 }
 </script>
 
-<style scoped lang="less"></style>
+<style scoped lang="less">
+.docx-preview-container {
+  box-sizing: border-box;
+  width: 100%;
+  height: 300px;
+  padding: 0;
+  margin-top: 10px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+::v-deep .docx-wrapper {
+  background: white;
+  padding: 0;
+  & > section.docx {
+    width: 90% !important;
+    padding: 0rem !important;
+    min-height: auto !important;
+    box-shadow: none;
+    margin: 0 auto;
+  }
+}
+</style>
