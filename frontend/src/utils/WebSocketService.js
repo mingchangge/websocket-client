@@ -24,15 +24,18 @@ class WebSocketService {
         // 监听token更新事件
         eventBus.on('token-updated', (newToken) => {
             this.token = newToken;
-            // 确保先完全断开旧连接再重连
-            if (this.socket) {
-                this.socket.onclose = () => {
+            // 保存当前socket引用防止闭包问题
+            const oldSocket = this.socket;
+            oldSocket.onclose = () => {
+                // 仅当旧socket是当前引用时才处理
+                if (this.socket === oldSocket) {
                     this.socket = null;
-                    this.connect();
-                };
-                this.disconnect();
-            } else {
-                this.connect();
+                    this.connect(); // 关闭后立即重连
+                }
+            };
+            // 主动关闭连接触发重连
+            if (oldSocket.readyState === WebSocket.OPEN) {
+                oldSocket.close(1000, 'Token updated');
             }
         });
     }
@@ -159,7 +162,7 @@ class WebSocketService {
         clearTimeout(this.pongTimeout);
         this.pongTimeout = setTimeout(() => {
             console.error('心跳响应超时，主动断开连接');
-            this.socket?.close(1001, 'Heartbeat timeout');
+            this.socket?.close(4008, 'Heartbeat timeout');
         }, this.heartbeatTimeout);
     }
 
