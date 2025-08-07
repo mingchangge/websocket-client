@@ -52,7 +52,8 @@ export default {
       activeMenu: '/home',
       menuList: [
         { name: 'Home', path: '/home' },
-        { name: '元编程', path: '/meta-programming' }
+        { name: '元编程', path: '/meta-programming' },
+        { name: 'word文档预览', path: '/word-preview' }
       ],
       sites: [
         { name: 'Baidu', url: 'https://www.baidu.com' },

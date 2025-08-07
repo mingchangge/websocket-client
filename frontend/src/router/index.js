@@ -22,17 +22,24 @@ const routes = [
     path: '/',
     component: BaseLayout,
     redirect: '/home',
-    children: [{
-      path: 'home',
-      component: () => import('@/views/home-page'),
-      meta: { title: '首页', hidden: false },
-      children: []
-    }, {
-      path: 'meta-programming',
-      component: () => import('@/views/meta-programming'),
-      meta: { title: '前端元编程', hidden: false },
-      children: []
-    },]
+    children: [
+      {
+        path: 'home',
+        component: () => import('@/views/home-page'),
+        meta: { title: '首页', hidden: false },
+        children: []
+      }, {
+        path: 'meta-programming',
+        component: () => import('@/views/meta-programming'),
+        meta: { title: '前端元编程', hidden: false },
+        children: []
+      }, {
+        path: 'word-preview',
+        component: () => import('@/views/word-preview'),
+        meta: { title: 'word文档预览', hidden: false },
+        children: []
+      },
+    ]
   },
   {
     path: '*', redirect: '/login', hidden: true
