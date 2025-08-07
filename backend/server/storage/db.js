@@ -75,7 +75,7 @@ module.exports = {
         { id: 3, username: 'user2', password: '123456', email: 'user2@example.com' },
     ],
     // 消息存储（使用数组模拟数据库）
-    messages: [],
+    broadcast_messages: [],
     // 客户端连接池
     clients: clientManager.clients,
     addClient: clientManager.addClient.bind(clientManager),
@@ -83,6 +83,6 @@ module.exports = {
     sendToUser: clientManager.sendToUser.bind(clientManager),
     // 新增通用访问方法
     getUsers: () => this.users,
-    addMessage: (msg) => this.messages.push(msg)
+    addMessage: (msg) => this.broadcast_messages.push(msg)
 };
 

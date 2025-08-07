@@ -63,6 +63,9 @@ export const useWebSocketStore = defineStore('websocketStore', {
                     case 'notification':
                         messageStore.setMessagesList(data.contentList);
                         break;
+                    case 'broadcast':
+                        messageStore.setBroadcastList(data.contentList);
+                        break;
                     case 'system':
                         console.log('系统消息:', data.content);
                         break;

@@ -34,7 +34,8 @@ export default {
   computed: {
     ...mapState(useMessageStore, {
       latestMessages: state => state.getLatestMessages(4),
-      unReadCount: state => state.unReadCount
+      unReadCount: state => state.unReadCount,
+      broadcastList: state => state.broadcastList
     }),
     noData() {
       return this.latestMessages.length === 0
