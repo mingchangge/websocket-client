@@ -40,7 +40,10 @@ export const useWebSocketStore = defineStore('websocketStore', {
                     console.log('连接关闭详情:', event);
                     if (event.code === 1006) {
                         console.warn('异常断开，尝试刷新令牌');
-                        userStore.refreshToken();
+                        userStore.refreshToken().catch(err => {
+                            console.error('令牌刷新失败，触发登出:', err);
+                            this.handleLogout({ message: '令牌已过期，请重新登录', code: 'TOKEN_EXPIRED' });
+                        });
                     }
                 },
                 onError: (error) => console.error('WebSocket错误:', error),
@@ -66,9 +69,8 @@ export const useWebSocketStore = defineStore('websocketStore', {
                     case 'tokenRefresh':
                         console.log('Token已刷新');
                         userStore.setToken(data.token) // 仅更新内存
-                        console.log('重新WebSocket建立连接')
-                        this.initWebSocket(data.token);
-                        console.log('WebSocket连接已建立');
+                        // 通过eventBus通知WebSocketService更新token
+                        eventBus.emit('token-updated', data.token);
                         break;
                     case 'forceLogout':
                         console.warn('强制登出:', data.reason);
@@ -113,7 +115,13 @@ export const useWebSocketStore = defineStore('websocketStore', {
         // 新增处理方法
         handleLogout(reason) {
             try {
-                const data = typeof reason === 'string' ? JSON.parse(reason) : reason;
+                let data;
+                try {
+                    data = typeof reason === 'string' ? JSON.parse(reason) : reason;
+                } catch (e) {
+                    // 处理非JSON格式的错误信息
+                    data = { message: reason };
+                }
                 console.warn('强制登出:', data.message || '未知原因');
 
                 // 统一清理逻辑
@@ -128,4 +136,4 @@ export const useWebSocketStore = defineStore('websocketStore', {
             }
         }
     }
-});    
+});

@@ -97,7 +97,7 @@ router.post('/api/refresh_token', (ctx) => {
 })
 // 退出登录接口
 router.post('/api/logout', async (ctx) => {
-  console.log('退出登录接口被调用', ctx);
+  console.log('退出登录接口被调用');
   const token = ctx.headers.authorization?.replace('Bearer ', '') || ctx.headers.token;
 
   try {

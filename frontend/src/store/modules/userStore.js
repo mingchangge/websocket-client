@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import { common } from '@/api/common'
 import { Message } from 'element-ui'
-import { router } from '@/router';
 import { eventBus } from '@/utils/eventBus';
 
 export const useUserStore = defineStore('userStore', {
     state: () => ({
+        isRefreshing: false, // 添加刷新锁
         userInfo: {},
         accessToken: null // 内存存储AccessToken
     }),
@@ -23,18 +23,24 @@ export const useUserStore = defineStore('userStore', {
             localStorage.setItem('accessToken', token)
         },
         async refreshToken() {
+            if (this.isRefreshing) return Promise.reject('正在刷新令牌中');
             try {
+                this.isRefreshing = true;
                 const response = await common.refreshTokenApi();
+                if (!response || !response.data || !response.data.access_token) {
+                    throw new Error('刷新令牌响应格式不正确');
+                }
+                console.log('刷新令牌成功-------------------:', response);
                 this.setToken(response.data.access_token);
                 // 触发全局事件
                 // 通过事件总线通知
-                eventBus.emit('token-updated', response.data.access_token);
+                eventBus.emit('token-refreshed', { token: response.data.access_token });
                 return true;
             } catch (error) {
-                console.error('令牌刷新失败:', error);
-                this.clearHistory();
-                router.push('/login');
-                return false;
+                console.error('令牌刷新失败------------------------:', error);
+                return Promise.reject(error);
+            } finally {
+                this.isRefreshing = false;
             }
         },
         setUserInfo(info) {

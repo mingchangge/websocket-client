@@ -11,7 +11,8 @@ const services = axios.create({
       ? '/api' // 开发环境走代理
       : import.meta.env.VITE_API_URL, // 生产环境用实际地址
   // 请求超时时间---60秒
-  timeout: 60000
+  timeout: 60000,
+  withCredentials: true  // 允许携带跨域Cookie
 })
 // 在 axios.create() 之后添加
 console.log('[ENV]', {
@@ -27,7 +28,7 @@ services.interceptors.request.use(
      * 在这里一般会携带前台的参数发送给后台
      */
     const userStore = useUserStore()
-    if (userStore.accessToken) {
+    if (userStore.accessToken && !config.url.includes('/refresh_token')) {
       config.headers['Authorization'] = `Bearer ${userStore.accessToken}`
     }
     return config
@@ -104,13 +105,18 @@ services.interceptors.response.use(
       originalRequest._retry = true
       try {
         // 自动刷新token
-        // const response = await common.refreshTokenApi()
-        // const newAccessToken = response.data.access_token
         const userStore = useUserStore()
-        // userStore.setToken(newAccessToken)
-        userStore.refreshToken()
-        originalRequest.headers.Authorization = `Bearer ${userStore.accessToken}`
-        return services(originalRequest)
+        // 等待刷新结果并判断是否成功
+        const refreshSuccess = await userStore.refreshToken()
+        if (refreshSuccess) {
+          originalRequest.headers.Authorization = `Bearer ${userStore.accessToken}`
+          return services(originalRequest)
+        } else {
+          // 刷新失败直接跳转登录，不重试请求
+          userStore.clearHistory()
+          router.push('/login')
+          return Promise.reject(new Error('令牌刷新失败'))
+        }
       } catch (refreshError) {
         userStore.clearHistory()
         router.push('/login')

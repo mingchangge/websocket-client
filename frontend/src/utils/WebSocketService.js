@@ -24,8 +24,16 @@ class WebSocketService {
         // 监听token更新事件
         eventBus.on('token-updated', (newToken) => {
             this.token = newToken;
-            if (this.socket) this.disconnect();
-            this.connect();
+            // 确保先完全断开旧连接再重连
+            if (this.socket) {
+                this.socket.onclose = () => {
+                    this.socket = null;
+                    this.connect();
+                };
+                this.disconnect();
+            } else {
+                this.connect();
+            }
         });
     }
     // 初始化连接方法
