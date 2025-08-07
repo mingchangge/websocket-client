@@ -38,7 +38,7 @@ function setupWebSocket(server) {
     addClient(userId, ws);
 
     // 初始化业务逻辑
-    initializeServices(ws, userId, token);
+    initializeServices(ws, userId);
     heartbeat.start();
 
     // 使用统一的事件绑定方法

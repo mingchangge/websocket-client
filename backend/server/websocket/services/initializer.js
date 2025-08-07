@@ -1,7 +1,7 @@
 const tokenService = require('../../utils/token');
-const { users, clients, sendToUser } = require('../../storage/db');
+const { users, sendToUser } = require('../../storage/db');
 
-module.exports.initializeServices = (ws, userId, token) => {
+module.exports.initializeServices = (ws, userId) => {
     sendWelcomeMessage(ws);
     sendUserInfo(ws, userId);
     const contentList = [{
@@ -80,22 +80,12 @@ function sendUserTokenExpired(ws) {
             // 设置定时器在过期前1秒触发
             const expirationTimer = setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
-                    // 生成新令牌（续期逻辑）
-                    const newToken = tokenService.refreshToken(decoded.userId);
-                    // 发送新令牌给客户端
+                    // 发送令牌过期预警，要求客户端使用refresh token获取新access token
                     ws.send(JSON.stringify({
                         type: 'tokenRefresh',
-                        token: newToken,
-                        expireAt: Date.now() + 3600000 // 1小时有效期
+                        message: 'Access token即将过期，请使用refresh token更新',
+                        expireAt: expirationTime
                     }));
-                    // 旧连接延迟关闭
-                    setTimeout(() => {
-                        ws.close(1000, 'token_refreshed'); // 只关闭当前续期的旧连接
-                    }, 1000);
-                    // 将旧token加入黑名单
-                    tokenService.tokenBlacklist.add(ws.token);
-                    // 更新当前连接的令牌
-                    ws.token = newToken;
                     // 重新设置过期检测
                     sendUserTokenExpired(ws);
                 }
@@ -104,25 +94,16 @@ function sendUserTokenExpired(ws) {
             // 清理定时器
             ws.on('close', () => clearTimeout(expirationTimer));
         } else {
-            // 使用tokenService的错误类型判断
-            const reason = error instanceof tokenService.TokenExpiredError
-                ? 'token_expired'
-                : 'invalid_token';
-
             // 强制断开无效连接
             if (ws.readyState === WebSocket.OPEN) {
                 // 发送强制登出指令
                 ws.send(JSON.stringify({
                     type: 'forceLogout',
-                    reason: reason,
+                    reason: 'invalid_token',
                     timestamp: Date.now()
                 }));
                 // 延迟1秒关闭确保消息送达
                 setTimeout(() => ws.close(1008, 'Token expired'), 1000);
-            }
-
-            // 如果是过期错误，额外记录日志
-            if (error instanceof tokenService.TokenExpiredError) {
                 console.warn('令牌过期强制登出:', ws.token);
                 // 过期令牌的特殊处理示例，一般情况下也就是强制退出了
                 // TokenExpiredHandler(ws, decoded, error)

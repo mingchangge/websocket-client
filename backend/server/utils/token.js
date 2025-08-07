@@ -44,31 +44,40 @@ class TokenBlacklist {
 const tokenBlacklist = new TokenBlacklist();
 
 module.exports = {
-    // 生成双Token
-    generateTokens(userId) {
-        // 增加参数验证
+    // 抽象token生成逻辑
+    _createToken(userId, tokenType, secret, expiresIn) {
         if (typeof userId !== 'number') {
             throw new Error('Invalid user ID type');
         }
+        if (!['access', 'refresh'].includes(tokenType)) {
+            throw new Error('Invalid token type');
+        }
+        const payload = {
+            userId,
+            tokenType,
+            version: 'v1', // 添加版本控制字段
+            iat: Math.floor(Date.now() / 1000)
+        };
+        return jwt.sign(
+            payload,
+            secret,
+            { expiresIn }
+        );
+    },
+    // 生成双Token
+    generateTokens(userId) {
         return {
-            accessToken: jwt.sign(
-                { userId },
-                'access-token-secret',
-                { expiresIn: '15m' }
-            ),
-            refreshToken: jwt.sign(
-                { userId, tokenType: 'refresh' },
-                'refresh-token-secret',
-                { expiresIn: '7d' }
-            )
+            accessToken: this._createToken(userId, 'access', SECRETS.access, '5m'),
+            refreshToken: this._createToken(userId, 'refresh', SECRETS.refresh, '7d')
         };
     },
-    refreshToken(userId) {
-        return jwt.sign(
-            { userId, tokenType: 'refresh' },
-            'your-secret-key',
-            { expiresIn: '7d' }
-        );
+
+    refreshToken(refreshToken) {
+        const decoded = this.verifyToken(refreshToken);
+        if (decoded.tokenType !== 'refresh') {
+            throw new Error('Invalid token type. Expected refresh token.');
+        }
+        return this._createToken(decoded.userId, 'access', SECRETS.access, '5m');
     },
     // 令牌吊销方法
     revokeToken(token, options = {}) {
