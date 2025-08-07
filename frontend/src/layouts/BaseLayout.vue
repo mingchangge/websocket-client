@@ -13,13 +13,33 @@
             text-color="#333"
             active-text-color="#409eff"
           >
-            <el-menu-item
+            <div v-for="menu in menuList" :key="menu.name">
+              <el-submenu :index="menu.name" v-if="menu.children">
+                <template slot="title">{{ menu.name }}</template>
+                <div v-for="item in menu.children" :key="item.name">
+                  <el-menu-item
+                    :index="item.path"
+                    :key="item.name"
+                    @click="getPath(item)"
+                    >{{ item.name }}</el-menu-item
+                  >
+                </div>
+              </el-submenu>
+              <el-menu-item
+                v-else
+                :index="menu.path"
+                :key="menu.name"
+                @click="getPath(menu)"
+                >{{ menu.name }}</el-menu-item
+              >
+            </div>
+            <!-- <el-menu-item
               v-for="menu in menuList"
               :index="menu.path"
               :key="menu.name"
               @click="getPath(menu)"
               >{{ menu.name }}</el-menu-item
-            >
+            > -->
             <el-menu-item
               v-for="menu in sites"
               :index="menu.url"
@@ -53,7 +73,13 @@ export default {
       menuList: [
         { name: 'Home', path: '/home' },
         { name: '元编程', path: '/meta-programming' },
-        { name: 'word文档预览', path: '/word-preview' }
+        {
+          name: 'word preview',
+          children: [
+            { name: 'docx-preview', path: '/word-preview' },
+            { name: 'mammoth-preview', path: '/mammoth-preview' }
+          ]
+        }
       ],
       sites: [
         { name: 'Baidu', url: 'https://www.baidu.com' },

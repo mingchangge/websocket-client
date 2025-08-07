@@ -35,10 +35,15 @@ const routes = [
         children: []
       }, {
         path: 'word-preview',
-        component: () => import('@/views/word-preview'),
+        component: () => import('@/views/word-preview/DocxPreview.vue'),
         meta: { title: 'word文档预览', hidden: false },
         children: []
-      },
+      }, {
+        path: 'mammoth-preview',
+        component: () => import('@/views/word-preview/MammothPreview.vue'),
+        meta: { title: 'word文档预览', hidden: false },
+        children: []
+      }
     ]
   },
   {
