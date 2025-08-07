@@ -1,13 +1,24 @@
 <template>
   <div>
     <h1>docx-preview</h1>
-    <p>像素级还原，真·预览利器</p>
-    <p>
-      如果你正在开发一个在线文档预览器，或者希望用户可以在 Web 页面中“像在 Word
-      里一样看文档”，那 docx-preview 就是你要找的神兵利器。
-    </p>
-    <p>安装方式：</p>
-    <code>npm install docx-preview</code>
+    <div class="article">
+      <div class="article-content">
+        <p>像素级还原，真·预览利器</p>
+        <p>
+          如果你正在开发一个在线文档预览器，或者希望用户可以在 Web 页面中“像在
+          Word 里一样看文档”，那 docx-preview 就是你要找的神兵利器。
+        </p>
+      </div>
+      <span class="divider"></span>
+      <div class="article-content">
+        <h2>安装方式：</h2>
+        <code>npm install docx-preview</code>
+        <h2 class="warning">⚠️ 注意事项：</h2>
+        <p>1. 对复杂文档兼容性很好，但个别嵌入元素可能显示不完整</p>
+        <p>2. 大文档加载时间略长（毕竟是还原每一个像素）</p>
+      </div>
+    </div>
+
     <div class="docx-preview-container">
       <div ref="previewContainer"></div>
     </div>
@@ -53,6 +64,35 @@ export default {
 </script>
 
 <style scoped lang="less">
+.article {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ccc;
+  .divider {
+    width: 1px;
+    background: #ccc;
+    margin: 0 12px; /* 左右留白，可按需调整 */
+    flex-shrink: 0; /* 防止被压缩 */
+    align-self: stretch; /* 拉伸到父容器高度 */
+  }
+  .article-content {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    h2 {
+      font-size: 18px;
+      color: rgb(19, 92, 224);
+      line-height: 1.5em;
+    }
+    .warning {
+      color: rgb(19, 92, 224);
+    }
+  }
+}
 .docx-preview-container {
   box-sizing: border-box;
   width: 100%;
