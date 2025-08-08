@@ -67,7 +67,7 @@ module.exports = {
     // 生成双Token
     generateTokens(userId) {
         return {
-            accessToken: this._createToken(userId, 'access', SECRETS.access, '5m'),
+            accessToken: this._createToken(userId, 'access', SECRETS.access, '15m'),
             refreshToken: this._createToken(userId, 'refresh', SECRETS.refresh, '7d')
         };
     },
@@ -77,7 +77,7 @@ module.exports = {
         if (decoded.tokenType !== 'refresh') {
             throw new Error('Invalid token type. Expected refresh token.');
         }
-        return this._createToken(decoded.userId, 'access', SECRETS.access, '5m');
+        return this._createToken(decoded.userId, 'access', SECRETS.access, '15m');
     },
     // 令牌吊销方法
     revokeToken(token, options = {}) {
