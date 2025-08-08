@@ -37,7 +37,7 @@
         <p>1. 对复杂文档兼容性很好，但个别嵌入元素可能显示不完整</p>
         <p>2. 大文档加载时间略长（毕竟是还原每一个像素）</p>
         <p class="special-class">
-          追求“所见即所得”？选 <code>docx-preview</code> 模式
+          追求“所见即所得”？选 <code>docx-preview</code>
         </p>
       </div>
     </div>
