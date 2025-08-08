@@ -30,14 +30,12 @@ export const useUserStore = defineStore('userStore', {
                 if (!response || !response.data || !response.data.access_token) {
                     throw new Error('刷新令牌响应格式不正确');
                 }
-                console.log('刷新令牌成功-------------------:', response);
                 this.setToken(response.data.access_token);
                 localStorage.setItem('accessToken', response.data.access_token);
                 // 通过事件总线通知
                 eventBus.emit('token-updated', response.data.access_token);
                 return true;
             } catch (error) {
-                console.error('令牌刷新失败------------------------:', error);
                 this.logout({ code: 'TOKEN_EXPIRED', message: '令牌已过期，请重新登录' });
                 return Promise.reject(error);
             } finally {

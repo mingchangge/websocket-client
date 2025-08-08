@@ -24,7 +24,6 @@ class WebSocketService {
         // 监听token更新事件
         this.tokenUpdatedListener = (newToken) => {
             this.token = newToken;
-            console.log('token更新:', newToken);
             const oldSocket = this.socket;
             oldSocket.onclose = () => {
                 if (this.socket === oldSocket) {
@@ -49,7 +48,6 @@ class WebSocketService {
         }
         const userStore = useUserStore();
         this.token = userStore.useToken;
-        console.log('token更新 2:', this.token);
         this.isManualDisconnect = false;
         // 对token进行URL编码，防止特殊字符导致协议错误
         const encodedUrl = this._buildSafeWebSocketUrl();
