@@ -83,11 +83,23 @@ function sendUserTokenExpired(ws) {
                     // 发送令牌过期预警，要求客户端使用refresh token获取新access token
                     ws.send(JSON.stringify({
                         type: 'tokenRefresh',
-                        message: 'Access token即将过期，请使用refresh token更新',
+                        message: 'Access token即将过期，请发送refreshTokenRequest获取新token',
                         expireAt: expirationTime
                     }));
-                    // 重新设置过期检测
-                    sendUserTokenExpired(ws);
+                    // 设置5秒刷新等待期 -重新设置过期检测
+                    const refreshWaitTimer = setTimeout(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                type: 'forceLogout',
+                                reason: 'token_expired',
+                                timestamp: Date.now()
+                            }));
+                            setTimeout(() => ws.close(1008, 'Token expired'), 1000);
+                            console.warn('令牌过期强制登出:', ws.token);
+                        }
+                    }, 5000);
+                    ws.refreshWaitTimer = refreshWaitTimer;
+                    ws.on('close', () => clearTimeout(refreshWaitTimer));
                 }
             }, remainingTime);
 

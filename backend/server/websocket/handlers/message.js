@@ -1,4 +1,3 @@
-const tokenService = require('../../utils/token');
 // 消息处理器
 module.exports.handleMessage = (ws, heartbeat, userId, message) => {
     heartbeat.updateActivity();
@@ -11,18 +10,8 @@ module.exports.handleMessage = (ws, heartbeat, userId, message) => {
             ws.send('pong');
             return;
         }
-        const data = JSON.parse(message);
-
-        // 处理刷新令牌请求
-        if (data.type === 'refreshTokenRequest') {
-            const newAccessToken = tokenService.refreshToken(data.refreshToken);
-            ws.send(JSON.stringify({
-                type: 'tokenRefreshSuccess',
-                accessToken: newAccessToken,
-                expireAt: Date.now() + 300000 // 5分钟有效期
-            }));
-            return;
-        }
+        // 回复客户端
+        ws.send(message);
     } catch (error) {
         console.error('处理消息错误:', error);
         ws.send(JSON.stringify({

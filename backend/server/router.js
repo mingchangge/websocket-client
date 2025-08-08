@@ -20,21 +20,29 @@ router.post('/api/login', async (ctx) => {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
-    // 生成双Token
-    const { accessToken, refreshToken } = tokenService.generateTokens(user.id);
-    // 设置HttpOnly Cookie
-    ctx.cookies.set('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: !isDev, // 生产环境启用
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 3600 * 1000 // 7天
-    });
+    console.log('用户认证成功，准备设置cookie');
+    try {
+      // 生成双Token
+      const { accessToken, refreshToken } = tokenService.generateTokens(user.id);
+      // 设置新Cookie
+      ctx.cookies.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: !isDev, // 生产环境启用
+        sameSite: isDev ? 'lax' : 'strict', // 开发环境宽松策略
+        path: '/', // 全站可用
+        maxAge: 7 * 24 * 3600 * 1000 // 7天
+      });
 
-    ctx.body = {
-      code: '000000',
-      data: { access_token: accessToken },
-      message: '登录成功'
-    };
+      ctx.body = {
+        code: '000000',
+        data: { access_token: accessToken },
+        message: '登录成功'
+      };
+    } catch (error) {
+      console.error('设置refresh_token cookie失败:', error);
+      ctx.status = 500;
+      ctx.body = { message: '设置cookie失败' };
+    }
   } else {
     ctx.status = 401;
     ctx.body = { message: '认证失败' };
@@ -43,7 +51,7 @@ router.post('/api/login', async (ctx) => {
 // 刷新Token接口
 router.post('/api/refresh_token', (ctx) => {
   const refreshToken = ctx.cookies.get('refresh_token');
-
+  console.log('refreshToken====================》', refreshToken);
   // 验证RefreshToken
   try {
     // 使用tokenService验证令牌
@@ -66,9 +74,10 @@ router.post('/api/refresh_token', (ctx) => {
     // 设置新Cookie
     ctx.cookies.set('refresh_token', newRefreshToken, {
       httpOnly: true,
-      secure: !isDev,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 3600 * 1000
+      secure: !isDev, // 生产环境启用
+      sameSite: isDev ? 'lax' : 'strict', // 开发环境宽松策略
+      path: '/', // 全站可用
+      maxAge: 7 * 24 * 3600 * 1000 // 7天
     });
 
     ctx.body = {
@@ -216,4 +225,4 @@ router.post('/api/change-password', authMiddleware({
 }), async (ctx) => {
   // 模拟密码更改逻辑
 });
-module.exports = router;    
+module.exports = router;
