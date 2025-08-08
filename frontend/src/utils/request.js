@@ -2,8 +2,6 @@ import axios from 'axios'
 import Vue from 'vue'
 import { Message } from 'element-ui'
 import { useUserStore } from '@/store'
-import { router } from '@/router'
-import { common } from '@/api/common'
 
 const services = axios.create({
   baseURL:
@@ -28,7 +26,8 @@ services.interceptors.request.use(
      * 在这里一般会携带前台的参数发送给后台
      */
     const userStore = useUserStore()
-    if (userStore.accessToken && !config.url.includes('/refresh_token')) {
+    const isRefreshRequest = config.url.includes('/refresh_token');
+    if (userStore.accessToken && !isRefreshRequest) {
       config.headers['Authorization'] = `Bearer ${userStore.accessToken}`
     }
     return config
@@ -95,33 +94,9 @@ services.interceptors.response.use(
       console.error('[api]', msg)
       return Promise.reject(msg)
     }
-
     return res
   },
   async error => {
-    const { response } = error
-    const originalRequest = error.config
-    if (response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-      try {
-        // 自动刷新token
-        const userStore = useUserStore()
-        // 等待刷新结果并判断是否成功
-        const refreshSuccess = await userStore.refreshToken()
-        if (refreshSuccess) {
-          originalRequest.headers.Authorization = `Bearer ${userStore.accessToken}`
-          return services(originalRequest)
-        } else {
-          // 刷新失败直接跳转登录，不重试请求
-          userStore.clearHistory()
-          router.push('/login')
-          return Promise.reject(new Error('令牌刷新失败'))
-        }
-      } catch (refreshError) {
-        userStore.clearHistory()
-        router.push('/login')
-      }
-    }
     return Promise.reject(error)
   }
 )

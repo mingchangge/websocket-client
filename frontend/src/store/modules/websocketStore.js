@@ -3,7 +3,6 @@ import WebSocketService from '@/utils/WebSocketService';
 import { useUserStore } from './userStore';
 import { useMessageStore } from './messageStore';
 import { router } from '@/router'
-import { eventBus } from '@/utils/eventBus'
 
 export const useWebSocketStore = defineStore('websocketStore', {
     state: () => ({
@@ -11,22 +10,6 @@ export const useWebSocketStore = defineStore('websocketStore', {
         ws: null, // WebSocket实例
     }),
     actions: {
-        // 新增初始化方法
-        setupEventListeners() {
-            // 安全检查
-            if (typeof window === 'undefined') return;
-
-            // 令牌刷新监听
-            eventBus.on('token-refreshed', ({ token }) => {
-                console.log('收到令牌刷新事件，重新连接WebSocket');
-                this.initWebSocket(token);
-            });
-
-            // 登出事件监听
-            eventBus.on('user-logout', () => {
-                this.disconnect();
-            });
-        },
         initWebSocket(token) {
             // 如有WebSocket连接，先断开，在重新连接
             this.disconnect();
@@ -70,10 +53,8 @@ export const useWebSocketStore = defineStore('websocketStore', {
                         console.log('系统消息:', data.content);
                         break;
                     case 'tokenRefresh':
-                        console.log('Token已刷新');
-                        userStore.setToken(data.token) // 仅更新内存
-                        // 通过eventBus通知WebSocketService更新token
-                        eventBus.emit('token-updated', data.token);
+                        console.log('收到Token过期通知，请求刷新Token');
+                        userStore.refreshToken();
                         break;
                     case 'forceLogout':
                         console.warn('强制登出:', data.reason);
@@ -137,6 +118,6 @@ export const useWebSocketStore = defineStore('websocketStore', {
             } catch (e) {
                 console.error('强制登出处理异常:', e);
             }
-        }
+        },
     }
 });

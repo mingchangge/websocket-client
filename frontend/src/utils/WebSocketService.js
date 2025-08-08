@@ -4,8 +4,8 @@ import { eventBus } from '@/utils/eventBus'
 class WebSocketService {
     constructor(options) {
         this.url = options.url;
-        this.token = options.token; // 新增token参数
-        this.forceLogout = false; // 新增强制退出标志
+        // 移除未使用的options.token参数
+        this.forceLogout = false;
         // 回调函数
         this.onMessage = options.onMessage;
         this.onClose = (event) => options.onClose?.(event);
@@ -22,21 +22,24 @@ class WebSocketService {
         this.heartbeatTimer = null;     // 心跳定时器
         this.pongTimeout = null;        // 响应超时检测
         // 监听token更新事件
-        eventBus.on('token-updated', (newToken) => {
+        this.tokenUpdatedListener = (newToken) => {
             this.token = newToken;
-            // 保存当前socket引用防止闭包问题
+            console.log('token更新:', newToken);
             const oldSocket = this.socket;
             oldSocket.onclose = () => {
-                // 仅当旧socket是当前引用时才处理
                 if (this.socket === oldSocket) {
                     this.socket = null;
-                    this.connect(); // 关闭后立即重连
+                    this.connect();
                 }
             };
-            // 主动关闭连接触发重连
             if (oldSocket.readyState === WebSocket.OPEN) {
                 oldSocket.close(1000, 'Token updated');
             }
+        };
+        eventBus.on('token-updated', this.tokenUpdatedListener);
+        // 登出事件监听
+        eventBus.on('user-logout', () => {
+            this.disconnect();
         });
     }
     // 初始化连接方法
@@ -44,37 +47,12 @@ class WebSocketService {
         if (this.socket && (this.socket.readyState === WebSocket.CONNECTING || this.socket.readyState === WebSocket.OPEN)) {
             return;
         }
-        // 新增连接前验证
         const userStore = useUserStore();
-        console.log('userStore.accessToken', userStore.accessToken);
-        if (!userStore.useToken) {
-            console.log('等待AccessToken初始化...');
-            eventBus.on('token-updated', (newToken) => {
-                userStore.setToken(newToken);
-                this.token = newToken;
-                if (this.socket) this.disconnect();
-                this.connect();
-            });
-            // 添加事件监听代替定时器
-            // const tokenListener = (newToken) => {
-            //     eventBus.off('token-updated', tokenListener);
-            //     clearTimeout(this.reconnectTimer);
-            //     this.connect();
-            // };
-            // eventBus.on('token-updated', tokenListener);
-
-            // // 设置带清理的定时器
-            // this.reconnectTimer = setTimeout(() => {
-            //     eventBus.off('token-updated', tokenListener);
-            //     this.connect();
-            // }, 1000 * 30);
-            return;
-        }
-        // 新增连接状态追踪
+        this.token = userStore.useToken;
+        console.log('token更新 2:', this.token);
         this.isManualDisconnect = false;
         // 对token进行URL编码，防止特殊字符导致协议错误
         const encodedUrl = this._buildSafeWebSocketUrl();
-        console.log('Connecting to:', encodedUrl); // 添加调试日志
         this.socket = new WebSocket(encodedUrl);
         // 新增握手超时机制（15秒）
         const connectTimeout = setTimeout(() => {
@@ -84,9 +62,9 @@ class WebSocketService {
             }
         }, 15000);
         this.socket.onopen = () => {
-            console.log('WebSocket 连接已建立');
+            clearTimeout(connectTimeout);
             this.reconnectAttempts = 0;
-            this._startHeartbeat(); // 启动心跳检测
+            this._startHeartbeat();
         };
 
         this.socket.onmessage = (event) => {  // 修改：增加心跳处理
@@ -100,18 +78,15 @@ class WebSocketService {
         };
 
         this.socket.onclose = (event) => {
-            this._clearHeartbeat(); // 清理心跳检测
-            console.log(`WebSocket 关闭，代码: ${event.code}，原因: ${event.reason}`);
-
-            // 新增关闭代码解析
+            clearTimeout(connectTimeout);
+            this._clearHeartbeat();
             if (event.code === 4401) {
                 try {
                     const reason = JSON.parse(event.reason);
                     if (reason.type === 'forceLogout') {
-                        console.warn('强制退出:', reason.message);
-                        this.onForceLogout?.(event.reason); // 调用强制退出回调
-                        this.forceLogout = true; // 设置强制退出标志
-                        this.socket = null; // 立即释放连接
+                        this.onForceLogout?.(event.reason);
+                        this.forceLogout = true;
+                        this.socket = null;
                         return;
                     }
                 } catch (e) {
@@ -122,7 +97,6 @@ class WebSocketService {
             // 原有重连逻辑
             if (!this.forceLogout) {
                 this.scheduleReconnect();
-                console.log('WebSocket 连接已关闭，准备重连');
             }
             this.onClose?.(event);
         };
@@ -143,10 +117,14 @@ class WebSocketService {
         if (!this.url.startsWith('ws://') && !this.url.startsWith('wss://')) {
             throw new Error(`Invalid WebSocket protocol: ${this.url}`);
         }
-        const urlObj = new URL(this.url);
-        console.log('原始URL:', this.url);
-        urlObj.searchParams.set('token', encodeURIComponent(this.token || ''));
-        return urlObj.toString();
+        try {
+            const urlObj = new URL(this.url);
+            urlObj.searchParams.set('token', encodeURIComponent(this.token || ''));
+            return urlObj.toString();
+        } catch (error) {
+            console.error('Invalid WebSocket URL:', error);
+            throw new Error('Invalid WebSocket URL format');
+        }
     }
     // 心跳检测私有方法
     _startHeartbeat() {
@@ -174,17 +152,18 @@ class WebSocketService {
     }
     // 断开连接方法
     disconnect() {
-        this._clearHeartbeat(); // 断开时清理心跳
-        this.isManualDisconnect = true; // 标记主动断开
+        this._clearHeartbeat();
+        this.isManualDisconnect = true;
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
         if (this.socket) {
             this.socket.onclose = null;
-            this.socket.close(1000, 'manual_disconnect'); // 使用1000表示正常关闭
+            this.socket.close(1000, 'manual_disconnect');
             this.socket = null;
         }
+        eventBus.off('token-updated', this.tokenUpdatedListener);
     }
 
     // 发送消息方法
@@ -199,7 +178,7 @@ class WebSocketService {
     // 重连方法,如果重连次数超过最大限制，则停止尝试
     scheduleReconnect() {
         if (this.forceLogout || this.isManualDisconnect) {
-            console.log('禁止重连状态');
+            // 移除调试日志
             return;
         }
         // 动态调整重试间隔（指数退避）

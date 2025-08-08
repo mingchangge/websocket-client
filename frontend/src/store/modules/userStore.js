@@ -32,12 +32,13 @@ export const useUserStore = defineStore('userStore', {
                 }
                 console.log('刷新令牌成功-------------------:', response);
                 this.setToken(response.data.access_token);
-                // 触发全局事件
+                localStorage.setItem('accessToken', response.data.access_token);
                 // 通过事件总线通知
-                eventBus.emit('token-refreshed', { token: response.data.access_token });
+                eventBus.emit('token-updated', response.data.access_token);
                 return true;
             } catch (error) {
                 console.error('令牌刷新失败------------------------:', error);
+                this.logout({ code: 'TOKEN_EXPIRED', message: '令牌已过期，请重新登录' });
                 return Promise.reject(error);
             } finally {
                 this.isRefreshing = false;
