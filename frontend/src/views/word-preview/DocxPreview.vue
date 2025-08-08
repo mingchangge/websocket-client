@@ -174,6 +174,7 @@ export default {
         }
         th,
         td {
+          min-width: 130px;
           padding: 5px 10px;
           border: none;
           border-right: 1px solid #ddd;
