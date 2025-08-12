@@ -41,20 +41,141 @@
 
     <div class="mammoth-preview-container">
       <div ref="previewContainer"></div>
+      <div class="wangeditor">
+        <Toolbar
+          style="border-bottom: 1px solid #ccc"
+          :editor="editor"
+          :default-config="toolbarConfig"
+          :mode="mode"
+        />
+        <Editor
+          v-loading="loading"
+          v-model="htmlContent"
+          style="height: 500px; overflow-y: hidden"
+          :default-config="editorConfig"
+          :mode="mode"
+          @onCreated="onEditCreated"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+import '@wangeditor/editor/dist/css/style.css'
+import mammoth from 'mammoth'
+
 export default {
   name: 'MammothPreview',
+  components: { Editor, Toolbar },
   data() {
     return {
+      loading: false,
+      htmlContent: '',
+      editor: null,
+      toolbarConfig: {
+        excludeKeys: ['group-image', 'group-video'] // 排除某个菜单组--此功能需要开发
+      },
+      editorConfig: {
+        placeholder: '请输入内容...'
+      },
+      mode: 'default', // or 'simple'
       fileUrl: new URL(`@/assets/word/preview.docx`, import.meta.url).href
+    }
+  },
+
+  mounted() {
+    this.preview()
+  },
+  beforeDestroy() {
+    if (this.editor) this.editor.destroy()
+  },
+  methods: {
+    onEditCreated(editor) {
+      this.editor = Object.seal(editor) // 一定要用 Object.seal() ，否则会报错
+      console.log('onCreated', this.editor.getAllMenuKeys())
+    },
+    async preview() {
+      this.loading = true
+      const response = await fetch(this.fileUrl)
+      const arrayBuffer = await response.arrayBuffer()
+      const options = {
+        styleMap: [
+          "p[style-name='Title'] => h1.title",
+          // "p[style-name='代码样式'] => pre > code:fresh",
+          // "p[style-name='接口代码样式'] => pre > code:fresh",
+          "p[style-name='代码样式'] => div.code-block > p.code-content:fresh",
+          "p[style-name='接口代码样式'] => div.code-block > p.code-content:fresh",
+          "p[style-name='接口列表样式'] => ul > li"
+        ],
+        convertImage: mammoth.images.imgElement(function (image) {
+          // 图片处理，可自定义为Blob URL
+          return image.readAsArrayBuffer().then(function (arrayBuffer) {
+            const blob = new Blob([arrayBuffer], {
+              type: image.type || 'image/png'
+            })
+            return {
+              src: URL.createObjectURL(blob),
+              alt: image.altText
+            }
+          })
+        }),
+        includeEmbeddedStyleMap: true
+      }
+      const result = await mammoth.convertToHtml({ arrayBuffer }, options)
+      // this.$refs.previewContainer.innerHTML = result.value
+      console.log('result:', result)
+      let html = result.value
+      this.loading = false
+      this.htmlContent = html
+      // this.editor.setHtml(html)
     }
   }
 }
 </script>
+
+<style lang="less">
+.mammoth-preview-container {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  li,
+  p {
+    text-align: left;
+  }
+  .title {
+    font-size: 3.4em;
+    margin: 20px 0;
+    color: rgb(0, 0, 0);
+    line-height: 1.5em;
+  }
+  pre,
+  .code-block {
+    padding: 10px;
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow-x: auto;
+    code,
+    .code-content {
+      font-family: 'Operator Mono', Consolas, Monaco, Menlo, monospace;
+      font-size: 14px;
+      color: rgb(14, 138, 235);
+      line-height: 1.8em;
+      letter-spacing: 0em;
+      padding-left: 20px;
+      &:first-of-type,
+      &:last-of-type {
+        padding-left: 0;
+      }
+    }
+  }
+}
+</style>
 
 <style scoped lang="less">
 .article {
@@ -168,5 +289,14 @@ export default {
       }
     }
   }
+}
+.mammoth-preview-container {
+  box-sizing: border-box;
+  width: 100%;
+  height: 300px;
+  padding: 0 20px;
+  margin-top: 10px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
 }
 </style>
