@@ -14,6 +14,19 @@
         <p class="special-class">
           只想获取内容做二次处理？用 <code>mammoth</code>
         </p>
+        <p>
+          它会将 Word 文档转换为 HTML 格式，保留段落、列表、表格、图片等元素。
+          转换后的 HTML 可以直接用于内容管理系统、富文本编辑器等场景。
+          它支持自定义转换规则，满足不同场景的需求。
+          例如，你可以自定义图片的处理方式，或者自定义表格的样式。
+          它还支持自定义转换规则，满足不同场景的需求。
+        </p>
+        <p class="special-class">
+          经验证，mammoth 可以转换 Word 文档为 HTML 格式。<span
+            class="special-class2"
+            >但wangeditor编辑器会将word文档中的二级列表项过滤，致使内容丢失</span
+          >
+        </p>
       </div>
       <span class="divider"></span>
       <div class="article-content">
@@ -55,6 +68,7 @@
           :default-config="editorConfig"
           :mode="mode"
           @onCreated="onEditCreated"
+          @onChange="onChange"
         />
       </div>
     </div>
@@ -78,7 +92,12 @@ export default {
         excludeKeys: ['group-image', 'group-video'] // 排除某个菜单组--此功能需要开发
       },
       editorConfig: {
-        placeholder: '请输入内容...'
+        placeholder: '请输入内容...',
+        htmlFilterRules: false,
+        MENU_CONF: {
+          'bulleted-list': { maxLevel: 3 },
+          'numbered-list': { maxLevel: 3 }
+        }
       },
       mode: 'default', // or 'simple'
       fileUrl: new URL(`@/assets/word/preview.docx`, import.meta.url).href
@@ -86,29 +105,53 @@ export default {
   },
 
   mounted() {
-    this.preview()
+    // this.preview()
+    this.edit()
   },
   beforeDestroy() {
-    if (this.editor) this.editor.destroy()
+    this.editor && this.editor.destroy()
   },
   methods: {
+    onChange(editor) {
+      // console.log('onChange', editor.getHtml())
+    },
     onEditCreated(editor) {
       this.editor = Object.seal(editor) // 一定要用 Object.seal() ，否则会报错
       console.log('onCreated', this.editor.getAllMenuKeys())
     },
     async preview() {
+      const { value: html } = await this.convertWord()
+      // 将 mammoth 生成的 HTML 内容赋值给 previewContainer
+      this.$refs.previewContainer.innerHTML = html
+    },
+    // 编辑
+    async edit() {
+      const { value: html } = await this.convertWord()
+      // 将 mammoth 生成的 HTML 内容赋值给 wangEditor
+      this.htmlContent = html
+      // this.editor.dangerouslyInsertHtml(html)
+      // this.editor.setHtml(html)
+    },
+    async convertWord() {
       this.loading = true
       const response = await fetch(this.fileUrl)
       const arrayBuffer = await response.arrayBuffer()
       const options = {
         styleMap: [
-          "p[style-name='Title'] => h1.title",
-          // "p[style-name='代码样式'] => pre > code:fresh",
-          // "p[style-name='接口代码样式'] => pre > code:fresh",
+          // 标题样式映射（元编程配置）
+          "p[style-name='Title'] => h1.titleStyle",
+          // 代码块样式
           "p[style-name='代码样式'] => div.code-block > p.code-content:fresh",
           "p[style-name='接口代码样式'] => div.code-block > p.code-content:fresh",
-          "p[style-name='接口列表样式'] => ul > li"
-        ],
+          // 列表样式 - 支持一级和二级列表
+          "p[style-name='接口列表样式'] => ul:fresh > li[style]:fresh",
+          "p[style-name='接口二级列表样式'] => ul:fresh > li[style]:fresh",
+          // 文本样式
+          "r[style-name='Strong'] => strong",
+          // 保留段落样式
+          'p => p[style]'
+        ].join('\n'),
+        transformDocument: mammoth.transforms.paragraph(this.transformElement),
         convertImage: mammoth.images.imgElement(function (image) {
           // 图片处理，可自定义为Blob URL
           return image.readAsArrayBuffer().then(function (arrayBuffer) {
@@ -121,15 +164,29 @@ export default {
             }
           })
         }),
-        includeEmbeddedStyleMap: true
+        includeEmbeddedStyleMap: true,
+        includeDefaultStyleMap: true
       }
+      /* 1. mammoth -> html */
       const result = await mammoth.convertToHtml({ arrayBuffer }, options)
-      // this.$refs.previewContainer.innerHTML = result.value
-      console.log('result:', result)
-      let html = result.value
+      console.log('result:----', result)
       this.loading = false
-      this.htmlContent = html
-      // this.editor.setHtml(html)
+      return result
+    },
+    transformElement(element) {
+      if (element.type === 'paragraph') {
+        const style = []
+        const spacing = element.spacing
+        if (spacing && spacing.after)
+          style.push(`margin-bottom:${spacing.after}pt`)
+        if (element.alignment) style.push(`text-align:${element.alignment}`)
+
+        return {
+          ...element,
+          style: style.join(';')
+        }
+      }
+      return element
     }
   }
 }
@@ -147,7 +204,7 @@ export default {
   p {
     text-align: left;
   }
-  .title {
+  .titleStyle {
     font-size: 3.4em;
     margin: 20px 0;
     color: rgb(0, 0, 0);
@@ -226,6 +283,11 @@ export default {
       color: rgb(19, 92, 224);
       font-weight: bold;
     }
+    .special-class2 {
+      display: block;
+      color: red;
+      font-weight: bold;
+    }
     code {
       box-sizing: border-box;
       font-family: 'Operator Mono', Consolas, Monaco, Menlo, monospace;
@@ -298,5 +360,6 @@ export default {
   margin-top: 10px;
   overflow-y: auto;
   border: 1px solid #ccc;
+  text-align: left;
 }
 </style>
