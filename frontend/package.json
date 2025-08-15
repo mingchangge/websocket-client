@@ -38,10 +38,12 @@
     "gm-crypto": "^0.1.12",
     "mammoth": "^1.10.0",
     "pinia": "^2.0.14",
+    "quill-delta": "^5.1.0",
     "v-calendar": "^2.4.1",
     "vue": "^2.7.5",
     "vue-area-linkage": "^5.1.0",
     "vue-material-design-icons": "^5.2.0",
+    "vue-quill-editor": "^3.0.6",
     "vue-router": "^3.5.4",
     "xlsx": "^0.18.5"
   },

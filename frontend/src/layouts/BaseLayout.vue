@@ -5,7 +5,13 @@
         <NavBar />
       </el-header>
       <el-container class="layout-container">
-        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+        <el-aside
+          width="200px"
+          style="
+            background-color: rgb(238, 241, 246);
+            border-right: solid 1px #e6e6e6;
+          "
+        >
           <el-menu
             :default-active="activeMenu"
             class="el-menu-vertical-demo"
@@ -77,7 +83,8 @@ export default {
           name: 'word preview',
           children: [
             { name: 'docx-preview', path: '/word-preview' },
-            { name: 'mammoth-preview', path: '/mammoth-preview' }
+            { name: 'mammoth-preview', path: '/mammoth-preview' },
+            { name: 'word编辑器-quill', path: '/word-editor' }
           ]
         }
       ],
@@ -132,6 +139,8 @@ export default {
     height: calc(100vh - 37px - 60px - 60px);
     .el-menu {
       height: 100%;
+      border-right: none;
+      text-align: left;
     }
   }
   .el-header,
@@ -148,6 +157,8 @@ export default {
     height: calc(100vh - 61px - 60px);
     .el-menu {
       height: 100%;
+      border-right: none;
+      text-align: left;
     }
   }
   .el-header,

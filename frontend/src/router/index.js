@@ -43,6 +43,11 @@ const routes = [
         component: () => import('@/views/word-preview/MammothPreview.vue'),
         meta: { title: 'word文档预览', hidden: false },
         children: []
+      }, {
+        path: 'word-editor',
+        component: () => import('@/views/word-preview/WordEditorQuill.vue'),
+        meta: { title: 'word文档编辑', hidden: false },
+        children: []
       }
     ]
   },
