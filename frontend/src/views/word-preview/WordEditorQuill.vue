@@ -9,13 +9,10 @@
           场景设计。它采用模块化架构，提供丰富的
           API，可以像拼积木一样按需增删功能，既能保持轻量，又具备高度可扩展性
         </p>
-        <p>安装方式：</p>
-        <pre>
-          <code>npm install vue-quill-editor@3 --save</code>
-        </pre>
-        <pre>
-          <code>npm install quill-delta --save</code>
-        </pre>
+        <p>
+          安装方式：
+          <code>npm install vue-quill-editor@3 quill-delta --save</code>
+        </p>
         <div class="introduce">
           <h2>常用进阶玩法:</h2>
           <ul>
@@ -33,6 +30,15 @@
             </li>
           </ul>
         </div>
+        <p>
+          总结：<span class="gradient-bg"
+            >当前安装的 Quill 的文档模型是「 可嵌套行内 blot 的块 blot
+            」，</span
+          ><span class="special-class2"
+            >行级 blot（bold、link …）可以层层嵌套；块级 blot
+            绝不允许再包含另一个块 blot。</span
+          >
+        </p>
       </div>
       <span class="divider"></span>
       <div class="article-content">
@@ -298,6 +304,7 @@ h1 {
     height: 100%;
     padding: 20px;
     flex: 1;
+    text-align: left;
     h2 {
       font-size: 18px;
       color: rgb(19, 92, 224);
@@ -324,6 +331,10 @@ h1 {
     }
     .special-class {
       color: rgb(19, 92, 224);
+      font-weight: bold;
+    }
+    .special-class2 {
+      color: red;
       font-weight: bold;
     }
     code {

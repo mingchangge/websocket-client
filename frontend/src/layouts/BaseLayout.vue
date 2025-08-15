@@ -141,6 +141,7 @@ export default {
       height: 100%;
       border-right: none;
       text-align: left;
+      overflow: hidden;
     }
   }
   .el-header,
@@ -159,6 +160,7 @@ export default {
       height: 100%;
       border-right: none;
       text-align: left;
+      overflow: hidden;
     }
   }
   .el-header,
