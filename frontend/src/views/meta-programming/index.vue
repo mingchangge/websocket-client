@@ -37,6 +37,9 @@ export default {
     this.proxyTrapPreventExtensions() // 调用代理劫持 preventExtensions 方法示例
     this.proxyTrapSetPrototypeOf() // 调用代理劫持 setPrototypeOf 方法示例
      */
+    // proxy无法劫持的示例
+    this.proxyCannotTrap()
+    /* 
     // reflect 示例
     this.reflectExample() // 调用 Reflect 示例
     // 调用 Reflect construct 示例
@@ -55,6 +58,7 @@ export default {
     this.reflectPreventExtensionsExample() // 调用 Reflect preventExtensions 示例
     this.reflectSetExample() // 调用 Reflect set 示例
     this.reflectSetPrototypeOfExample() // 调用 Reflect setPrototypeOf 示例
+     */
   },
   methods: {
     // 可以在这里添加元编程相关的方法
@@ -629,6 +633,174 @@ export default {
       )
       Object.setPrototypeOf(proxyObj, Array.prototype) // 设置原型为 Array.prototype
       console.log(Object.getPrototypeOf(proxyObj) === Array.prototype) // 输出: true
+    },
+    // proxy无法劫持的示例
+    proxyCannotTrap() {
+      /*  1. typeof proxy
+       * 无论你怎么设置 trap，typeof 操作始终不会触发任何 trap（包括 apply 或 construct），这是语言层面的保留行为。
+       * typeof 是静态操作，不触发运行时 hook
+       */
+      const target_1 = { a: 1 }
+      const p = new Proxy(target_1, {
+        get() {
+          console.log('get trap') // 不会被触发
+          return 42
+        },
+        has() {
+          console.log('has trap')
+          return true
+        },
+        ownKeys() {
+          console.log('ownKeys trap')
+          return ['b']
+        }
+      })
+
+      console.log(typeof p) // 'object' —— 没有任何 trap 日志
+
+      const target_2 = function () {}
+      const p2 = new Proxy(target_2, {
+        get() {
+          console.log('get trap')
+          return 42
+        },
+        apply() {
+          console.log('apply trap')
+          return 99
+        },
+        construct() {
+          console.log('construct trap')
+          return {}
+        }
+      })
+
+      console.log(typeof p2) // 'function' —— 没有任何 trap 日志
+      /*
+       *  2. 原始值转换：String(proxy)、Number(proxy)、+proxy
+       * 虽然你可能能拦住 toString 的访问，但你无法拦住整个“类型强转行为”。
+       * 像 +proxy、Number(proxy)、== null 等比较运算，底层通过 ToPrimitive 转换，不触发 trap
+       * 除非你拦截的是一个函数调用的属性访问阶段，否则基本无解
+       */
+      const p1 = new Proxy(
+        {
+          toString() {
+            return 'proxied'
+          }
+        },
+        {
+          get(target, key) {
+            console.log('get', key) // 输出: get Symbol(Symbol.toPrimitive) get toString
+            return target[key]
+          }
+        }
+      )
+
+      console.log(String(p1)) // 输出：proxied
+      const p1_1 = new Proxy(
+        {},
+        {
+          get(target, key) {
+            console.log(`拦截到读取属性：${String(key)}`)
+            // 按规范，Number 转换会先读 valueOf，再读 toString
+            if (key === 'valueOf') {
+              return () => 42 // 让 Number(p) 得到 42
+            }
+            return target[key]
+          }
+        }
+      )
+
+      console.log(Number(p1_1)) // 依次打印：
+      // 拦截到读取属性：Symbol(Symbol.toPrimitive)
+      // 拦截到读取属性：valueOf
+      // 42
+      /*  3. instanceof 操作
+       * instanceof 是基于 proxy.[[Prototype]] 来查找构造链的，除非你修改其 getPrototypeOf，否则也无法改变
+       * 更重要的是：
+       *  - 如果目标不是 callable（可以作为构造函数被调用），instanceof 也不会触发任何 trap
+       *    - 对 左侧操作数 而言，instanceof 只把它当“普通对象”看待，因此即使它是一个 Proxy，也仅与 [[GetPrototypeOf]] 有关——不会触发 apply / construct 等跟“调用”相关的 trap
+       *    - 对 右侧操作数 而言，它必须是可调用对象（函数/构造函数），否则规范直接抛 TypeError，不会进入任何 Proxy 逻辑。
+       *  - 要改变 instanceof 的行为，只能返回一个特殊的构造器对象
+       * 总结：
+       *  - 左侧是 Proxy 时，instanceof 只会沿着它的原型链做普通查找，与 Proxy 的大多数 trap 无关；
+       *  - 真正能改变结果的 trap 只有 getPrototypeOf（影响原型链）
+       *  - 右侧构造函数自己定义的 Symbol.hasInstance 才是 instanceof 的“钩子”，它可以改变 instanceof 的行为。
+       *  - 由于 instanceof 不会把左侧当作函数调用，所以 construct / apply 等“callable 相关”的 trap 永远不会被触发。
+       */
+      // 1. 默认行为：proxy 的原型链与普通对象一致
+      const target1 = {}
+      const proxy1 = new Proxy(target1, {})
+      console.log('proxy1 instanceof Object:', proxy1 instanceof Object)
+      // → true   （因为 proxy1.__proto__ 指向 Object.prototype）
+
+      // 2. 改写 getPrototypeOf 陷阱：强行让 instanceof 失败
+      const target2 = {}
+      const proxy2 = new Proxy(target2, {
+        getPrototypeOf() {
+          return null // 让原型链“断掉”
+        }
+      })
+
+      console.log('proxy2 instanceof Object:', proxy2 instanceof Object)
+      // → false  （原型链里再也找不到 Object.prototype）
+
+      function MyCtor() {}
+      //在严格模式下（Vue CLI / Vite 构建的项目默认 'use strict'），给只读属性赋值会立即抛异常，因此需要使用 Object.defineProperty 来定义 Symbol.hasInstance
+      Object.defineProperty(MyCtor, Symbol.hasInstance, {
+        value(instance) {
+          /* 你的判定逻辑 */
+          return instance?.specialFlag === 42
+        },
+        writable: true,
+        configurable: true
+      })
+
+      const obj = { specialFlag: 42 }
+      console.log(obj instanceof MyCtor) // true
+
+      const proxy = new Proxy(
+        {
+          [Symbol.toStringTag]: 'Custom'
+        },
+        {
+          get(target, key, receiver) {
+            if (key === Symbol.toStringTag) {
+              return 'Customchanged' // 修改 toStringTag
+            }
+            return Reflect.get(target, key, receiver)
+          }
+        }
+      )
+
+      console.log(Object.prototype.toString.call(proxy)) // [object Customchanged]
+
+      const target = { [Symbol.toStringTag]: 'FromTarget' }
+      const proxy3 = new Proxy(target, {
+        get(t, k) {
+          console.log('handler get:', k)
+          return k === Symbol.toStringTag ? 'FromHandler' : Reflect.get(t, k)
+        }
+      })
+      console.log(Object.prototype.toString.call(proxy3))
+
+      /* JSON.stringify 无法被完全拦截 */
+      const proxy4 = new Proxy(
+        {
+          toJSON() {
+            return 'hello'
+          }
+        },
+        {
+          get(t, k) {
+            console.log('get', k)
+            return t[k]
+          }
+        }
+      )
+
+      console.log(JSON.stringify(proxy4))
+      // get toJSON
+      // "hello"，触发了 toJSON，但无法完全控制字符串化
     },
     // Reflect apply示例
     reflectExample() {
